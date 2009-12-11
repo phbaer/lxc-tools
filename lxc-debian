@@ -211,7 +211,7 @@ collect_information() {
 	MTU=$_MTU_
     fi
 
-    ROOTFS="./rootfs.$NAME"
+    ROOTFS="/var/lib/lxc/rootfs.$NAME"
     # choose the rootfs
     echo -n "Specify the location of the rootfs [$ROOTFS] "
     read _ROOTFS_
@@ -340,7 +340,7 @@ destroy() {
 	return $RETVAL;
     fi
 
-    ROOTFS="./rootfs.$NAME"
+    ROOTFS="/var/lib/lxc/rootfs.$NAME"
 
     echo -n "Shall I remove the rootfs [y/n] ? "
     read
