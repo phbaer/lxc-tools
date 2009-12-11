@@ -204,14 +204,6 @@ collect_information() {
 	GATEWAY=$_GATEWAY_
     fi
 
-    # choose the MTU size
-    echo -n "What is the MTU size ? [$MTU] "
-    read _MTU_
-
-    if [ ! -z "$_MTU_" ]; then
-	MTU=$_MTU_
-    fi
-
     ROOTFS="/var/lib/lxc/rootfs.$NAME"
     # choose the rootfs
     echo -n "Specify the location of the rootfs [$ROOTFS] "
