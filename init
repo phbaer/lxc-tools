@@ -1,0 +1,107 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          lxc
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starts/stops linux containers
+# Description:       Provides linux container management: start, stop or
+#                    restart containers.
+### END INIT INFO
+
+# Author: Nigel McNie <nigel@mcnie.name>
+#set -x
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="linux containers"
+NAME=lxc
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Exit if the package is not installed
+[ -x /usr/bin/lxc-start ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Exit if there's no containers to start/stop
+[ ! -z "$CONTAINERS" ] || exit 0
+
+. /lib/init/vars.sh
+. /lib/lsb/init-functions
+
+do_start()
+{
+    for C in "$CONTAINERS"; do
+        [ "$VERBOSE" != no ] && log_progress_msg "$C"
+        if lxc-info -n $C | grep STOPPED > /dev/null 2>&1; then
+            if [ -x /usr/bin/screen ]; then
+                /usr/bin/screen -dmS init-${C} /usr/bin/lxc-start -n $C
+            else
+                lxc-start -n $C -d
+            fi
+            lxc-wait -n $C -s RUNNING
+            if [ $? -gt 0 ]; then
+                return 2
+            fi
+        fi
+    done
+}
+
+do_stop()
+{
+    for C in "$CONTAINERS"; do
+        [ "$VERBOSE" != no ] && log_progress_msg "$C"
+        if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
+            /usr/bin/lxc-stop -n $C
+            if [ $? -gt 0 ]; then
+                return 2
+            fi
+        fi
+    done
+}
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" #"$NAME"
+	do_start
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" #"$NAME"
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  restart|force-reload)
+	log_daemon_msg "Restarting $DESC" #"$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+	  	# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
+
+:
