@@ -236,7 +236,7 @@ install_debian()
 		break
 	    fi
 
-	    echo "Choose your architecture"
+	    echo "Choose the architecture for the container"
 	    select ARCH in amd64 i386; do
 		echo "Architecture $ARCH selected"
 		break;
