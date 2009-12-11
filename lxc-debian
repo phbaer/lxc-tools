@@ -283,6 +283,23 @@ install_debian()
 
 }
 
+run_pre_create_hook() {
+    # source a hook that's run before the container is created
+    # sourced so it has access to our variables, like $NAME
+    test -x /etc/lxc-debian/host-pre-create && . /etc/lxc-debian/host-pre-create
+}
+
+run_post_create_hooks() {
+    # source host and guest hooks for after the container is created
+    test -x /etc/lxc-debian/host-post-create && . /etc/lxc-debian/host-post-create
+
+    if [ -x /etc/lxc-debian/guest-post-create ]; then
+        cp /etc/lxc-debian/guest-post-create $ROOTFS/guest-post-create
+        chroot $ROOTFS /bin/bash /guest-post-create
+        chroot $ROOTFS /bin/rm /guest-post-create
+    fi
+}
+
 create() {
 
     collect_information
@@ -309,6 +326,8 @@ create() {
 
     disable_debian_services
 
+    run_pre_create_hook
+
     /usr/bin/lxc-create -n $NAME -f $CONFFILE
     RES=$?
 
@@ -320,6 +339,8 @@ create() {
 	echo "Failed to create '$NAME'"
 	exit 1
     fi
+
+    run_post_create_hooks
 
     echo "Done."
     echo -e "\nYou can run your container with the 'lxc-start -n $NAME'\n"
