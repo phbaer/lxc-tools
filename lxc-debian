@@ -261,7 +261,7 @@ install_debian()
 	        # download a mini debian into a cache
 		echo "Downloading debian minimal ..."
 		debootstrap --verbose --variant=minbase --arch=$ARCH \
-		    --include ifupdown,locales,libui-dialog-perl,dialog,apache2,netbase,net-tools,iproute,openssh-server \
+		    --include ifupdown,locales,libui-dialog-perl,dialog,netbase,net-tools,iproute,openssh-server \
 		    lenny $CACHE/partial-$ARCH $DEBMIRROR
 		
 		RESULT=$?
