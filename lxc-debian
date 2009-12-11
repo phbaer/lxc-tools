@@ -11,6 +11,7 @@ UTSNAME=
 IPV4="172.20.0.21"
 GATEWAY="172.20.0.1"
 MTU="1500"
+DEBMIRROR=http://ftp.debian.org/debian
 
 # These paths are within the container so do not need to obey configure prefixes
 INTERFACES="/etc/network/interfaces"
@@ -260,7 +261,7 @@ install_debian()
 		echo "Downloading debian minimal ..."
 		debootstrap --verbose --variant=minbase --arch=$ARCH \
 		    --include ifupdown,locales,libui-dialog-perl,dialog,apache2,netbase,net-tools,iproute,openssh-server \
-		    lenny $CACHE/partial-$ARCH http://ftp.debian.org/debian
+		    lenny $CACHE/partial-$ARCH $DEBMIRROR
 		
 		RESULT=$?
 		if [ "$RESULT" != "0" ]; then
