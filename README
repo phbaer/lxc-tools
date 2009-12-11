@@ -1,0 +1,50 @@
+lxc-debian
+==========
+
+`lxc-debian' is a script to create and destroy debian based linux containers.
+This particular version is based on the one that ships with the lxc package in
+debian unstable (/usr/share/doc/lxc/examples/lxc-debian.gz), but with a few
+modifications to make it a little easier to use.
+
+To create a container, run
+
+    lxc-debian create
+
+To remove one, run
+
+    lxc-debian destroy
+
+If you want to script some operations for when a container is created, I have
+added some hooks:
+
+    /etc/lxc-debian/host-pre-create
+
+        Shell script that runs on the host before the container is created. It
+        is sourced by lxc-debian, so has access to variables like $NAME, which
+        is the name of the container being created.
+
+    /etc/lxc-debian/host-post-create
+
+        Shell script that runs on the host after the container is created. It
+        is sourced by lxc-debian, so has access to variables like $NAME, which
+        is the name of the container being created.
+
+    /etc/lxc-debian/guest-post-create
+
+        Script that runs in the container after creation. It's run by chrooting
+        in, so naturally it doesn't have access to variables, though you can
+        get at that information through other ways (e.g. /etc/hostname).
+
+init
+====
+
+`init' is an init.d script you can install as /etc/init.d/lxc, that allows you
+to automatically start up and shut down containers on system start up/shut
+down. To specify the containers to start and stop, put this into
+/etc/default/lxc:
+
+CONTAINERS="name1 name2 name3"
+
+
+For more information, please read the article at:
+http://nigel.mcnie.name/blog/the-five-minute-guide-to-linux-containers-for-debian
