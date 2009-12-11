@@ -249,6 +249,14 @@ install_debian()
 		echo "not cached"
 		
 		mkdir -p "$CACHE/partial-$ARCH"
+
+		# choose a mirror
+		echo -n "Specify the debian mirror to use to download the rootfs [$DEBMIRROR] "
+		read _DEBMIRROR_
+
+		if [ ! -z "$_DEBMIRROR_" ]; then
+		DEBMIRROR=$_DEBMIRROR_
+		fi
 		
 	        # download a mini debian into a cache
 		echo "Downloading debian minimal ..."
