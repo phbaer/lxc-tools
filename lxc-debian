@@ -114,6 +114,7 @@ EOF
 
 reconfigure_debian_packages() {
     chroot $ROOTFS /usr/sbin/dpkg-reconfigure locales
+    chroot $ROOTFS /usr/sbin/dpkg-reconfigure tzdata
 }
 
 disable_debian_services() {
