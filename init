@@ -33,7 +33,7 @@ SCRIPTNAME=/etc/init.d/$NAME
 
 do_start()
 {
-    for C in "$CONTAINERS"; do
+    for C in $CONTAINERS; do
         [ "$VERBOSE" != no ] && log_progress_msg "$C"
         if lxc-info -n $C | grep STOPPED > /dev/null 2>&1; then
             if [ -x /usr/bin/screen ]; then
@@ -51,7 +51,7 @@ do_start()
 
 do_stop()
 {
-    for C in "$CONTAINERS"; do
+    for C in $CONTAINERS; do
         [ "$VERBOSE" != no ] && log_progress_msg "$C"
         if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
             /usr/bin/lxc-stop -n $C
