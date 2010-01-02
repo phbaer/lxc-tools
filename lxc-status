@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Outputs state of all containers
+#
+# Use with 'watch' to get a container monitor, e.g. watch 'sudo lxc-status'
+#
+# TODO: support regex filtering/-n argument? 'grep' works in the meantime
+#
+# Copyright (c) 2010 Nigel McNie
+#
+
+lxcpath=/var/lib/lxc
+
+if [ "$(id -u)" != "0" ]; then
+    echo "This script should be run as 'root'"
+    exit 1
+fi
+
+for CONTAINER in $(ls -1 $lxcpath); do
+    if [ -r $lxcpath/$CONTAINER/state ]; then
+        lxc-info -n $CONTAINER
+    fi
+done
