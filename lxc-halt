@@ -9,16 +9,17 @@
 # Copyright (c) 2010 Nigel McNie
 #
 
-# The command that will halt the container. You can use [container] as a
-# placeholder for the container name.
+# Default command for halting the container
 SHUTDOWN_CMD="ssh [container] halt"
 
-# The time beyond which a container will be forcably shut down
+# Default timeout for container shutdown
 TIMEOUT=20
+
 
 # No user configuration beyond this point
 
 
+[ -f /etc/default/lxc ] && . /etc/default/lxc
 
 if [ "$(id -u)" != "0" ]; then
     echo "This script should be run as 'root'"

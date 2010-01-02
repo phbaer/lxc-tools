@@ -83,9 +83,12 @@ processes are gone (or after a configurable timeout if it's taking too long).
 There's one trick - there's no easy way to run the halt command in the
 container, because the lxc developers haven't provided a nice way to run a
 single command in a running container yet. So you have to provide such a
-command - edit the script and look near the top to see what needs to be
-changed. The default is ``ssh [container] halt``, which of course will only
-work if your container is resolvable at that hostname.
+command.
+
+If you install the `default' file into /etc/default/lxc, you can edit that to
+change the command to halt a container.  The default is ``ssh [container]
+halt``, which of course will only work if your container is resolvable at that
+hostname.
 
 If you install lxc-halt in /usr/bin, then the init.d script will use it when
 you issue /etc/init.d/lxc stop. It will try stopping all the containers in
