@@ -13,7 +13,6 @@
 # Author: Nigel McNie <nigel@mcnie.name>
 #set -x
 
-# PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="linux containers"
 NAME=lxc
