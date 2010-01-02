@@ -1,5 +1,16 @@
+Linux Containers (lxc) Hacky Userspace Tools
+============================================
+
+This is a collection of utility scripts I've written to make using lxc a bit
+more bearable in Debian. For more information, see the article at:
+
+http://nigel.mcnie.name/blog/a-five-minute-guide-to-linux-containers-for-debian
+
+All of these scripts are released under the terms of the GNU GPL, version 3 or
+later.
+
 lxc-debian
-==========
+----------
 
 `lxc-debian' is a script to create and destroy debian based linux containers.
 This particular version is based on the one that ships with the lxc package in
@@ -36,7 +47,7 @@ added some hooks:
         get at that information through other ways (e.g. /etc/hostname).
 
 init
-====
+----
 
 `init' is an init.d script you can install as /etc/init.d/lxc, that allows you
 to automatically start up and shut down containers on system start up/shut
@@ -45,6 +56,35 @@ down. To specify the containers to start and stop, put this into
 
 CONTAINERS="name1 name2 name3"
 
+Note that this script will endeavour to use lxc-halt if it's in /usr/bin, see
+the docs for lxc-halt below for more information.
 
-For more information, please read the article at:
-http://nigel.mcnie.name/blog/a-five-minute-guide-to-linux-containers-for-debian
+lxc-status
+----------
+
+Runs lxc-info on all the containers and exits, leading to output like this:
+
+nigel@bubbles:~$ sudo bin/lxc-status
+'test' is STOPPED
+'debian-lenny' is STOPPED
+'ponies' is RUNNING
+
+lxc-halt
+--------
+
+Will stop a linux container SAFELY. ``lxc-stop`` brutally murders the container
+and all processes in it, which isn't good especially if you have daemons inside
+them. lxc-halt will run 'halt' in the container, then lxc-stop once all the
+processes are gone (or after a configurable timeout if it's taking too long).
+
+There's one trick - there's no easy way to run the halt command in the
+container, because the lxc developers haven't provided a nice way to run a
+single command in a running container yet. So you have to provide such a
+command - edit the script and look near the top to see what needs to be
+changed. The default is ``ssh [container] halt``, which of course will only
+work if your container is resolvable at that hostname.
+
+If you install lxc-halt in /usr/bin, then the init.d script will use it when
+you issue /etc/init.d/lxc stop. It will try stopping all the containers in
+parallel, but if you have a few containers it might take a while for all of
+them to stop.
