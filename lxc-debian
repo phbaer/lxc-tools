@@ -127,8 +127,28 @@ EOF
 }
 
 reconfigure_debian_packages() {
-    chroot $ROOTFS /usr/sbin/dpkg-reconfigure locales
-    chroot $ROOTFS /usr/sbin/dpkg-reconfigure tzdata
+    default_environment_locale=$(debconf-show locales | grep default_environment_locale | cut -f 2 -d :)
+    locales_to_be_generated=$(debconf-show locales | grep locales_to_be_generated | cut -f 2 -d :)
+    tzdata_area=$(debconf-show tzdata | grep Areas | cut -f 2 -d :)
+    tzdata_zone=$(debconf-show tzdata | grep Zones/${tzdata_area:1} | cut -f 2 -d :)
+
+    cat <<EOF | chroot $ROOTFS sh
+#!/bin/sh
+export LANG=C
+echo "locales locales/default_environment_locale select$default_environment_locale" > /debconf-selections
+echo "locales locales/locales_to_be_generated multiselect$locales_to_be_generated" >> /debconf-selections
+echo "tzdata tzdata/Areas select$tzdata_area" >> /debconf-selections
+echo "tzdata tzdata/Zones/${tzdata_area:1} select$tzdata_zone" >> /debconf-selections
+debconf-set-selections /debconf-selections
+
+rm -f /etc/locale.gen
+dpkg-reconfigure -u locales
+echo ${tzdata_area:1}/${tzdata_zone:1} > /etc/timezone
+cp /usr/share/zoneinfo/${tzdata_area:1}/${tzdata_zone:1} /etc/localtime
+dpkg-reconfigure -u tzdata
+
+rm -f /debconf-selections
+EOF
 }
 
 disable_debian_services() {
