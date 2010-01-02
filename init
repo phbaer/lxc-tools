@@ -34,7 +34,7 @@ SCRIPTNAME=/etc/init.d/$NAME
 do_start()
 {
     for C in $CONTAINERS; do
-        [ "$VERBOSE" != no ] && log_progress_msg "$C"
+        log_progress_msg "$C"
         if lxc-info -n $C | grep STOPPED > /dev/null 2>&1; then
             if [ -x /usr/bin/screen ]; then
                 /usr/bin/screen -dmS init-${C} /usr/bin/lxc-start -n $C
@@ -52,7 +52,7 @@ do_start()
 do_stop()
 {
     for C in $CONTAINERS; do
-        [ "$VERBOSE" != no ] && log_progress_msg "$C"
+        log_progress_msg "$C"
         if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
             /usr/bin/lxc-stop -n $C
             if [ $? -gt 0 ]; then
@@ -64,19 +64,19 @@ do_stop()
 
 case "$1" in
   start)
-	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" #"$NAME"
+	log_daemon_msg "Starting $DESC" #"$NAME"
 	do_start
 	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+		0|1) log_end_msg 0 ;;
+		2) log_end_msg 1 ;;
 	esac
 	;;
   stop)
-	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" #"$NAME"
+	log_daemon_msg "Stopping $DESC" #"$NAME"
 	do_stop
 	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+		0|1) log_end_msg 0 ;;
+		2) log_end_msg 1 ;;
 	esac
 	;;
   restart|force-reload)
