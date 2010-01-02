@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# Halts a running container
+#
+# Triggers a 'halt' in the machine, then waits for the init process to be the
+# only one left, then runs lxc-stop. There is a configurable timeout length for
+# if containers are taking too long to shutdown.
+#
+# Copyright (c) 2010 Nigel McNie
+#
+
+# The command that will halt the container. You can use [container] as a
+# placeholder for the container name.
+SHUTDOWN_CMD="ssh [container] halt"
+
+# The time beyond which a container will be forcably shut down
+TIMEOUT=20
+
+# No user configuration beyond this point
+
+
+
+if [ "$(id -u)" != "0" ]; then
+    echo "This script should be run as 'root'"
+    exit 1
+fi
+
+while getopts "n:" flag
+do
+    case $flag in
+        n) CONTAINER="$OPTARG" ;;
+        *) echo "Unknown flag: $flag"; exit 1; ;;
+    esac
+done
+
+if [ -z "$CONTAINER" ]; then
+    echo "lxc-halt: missing container name, use -n option"
+    exit 1
+fi
+
+if [ ! -f /var/lib/lxc/$CONTAINER/state ]; then
+    echo "lxc-halt: container $CONTAINER does not exist"
+    exit 1
+fi
+
+if [ "$(cat /var/lib/lxc/$CONTAINER/state)" = "RUNNING" ]; then
+
+    cmd="${SHUTDOWN_CMD//\[container\]/$CONTAINER}"
+    ( $cmd )
+
+    starttime=$(date "+%s")
+    while true
+    do
+        count=$(lxc-ps --lxc -n $CONTAINER ax | grep "^$CONTAINER " | wc -l)
+        if [ $count = 1 ]; then
+            lxc-stop -n $CONTAINER
+            exit 0
+        fi
+        sleep .25
+
+        curtime=$(date "+%s")
+
+        if [ $(( $curtime - $starttime )) -gt $TIMEOUT ]; then
+            echo "Container has been stopping for longer than $TIMEOUT seconds, forcing shutdown" >&2
+            lxc-stop -n $CONTAINER
+            exit 0
+        fi
+    done
+else
+    echo "Container $CONTAINER is already stopped" >&2
+fi
