@@ -1,0 +1,29 @@
+Source: lxc-debian
+Section: admin
+Priority: optional
+Maintainer: Nigel McNie <nigel@mcnie.name>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.2
+Homepage: http://nigel.mcnie.name/blog/a-five-minute-guide-to-linux-containers-for-debian
+Vcs-Git: git://git.nigel.mcnie.name/git/lxc-debian.git
+
+Package: lxc-debian
+Section: admin
+Architecture: all
+Depends: lxc, ${misc:Depends}
+Suggests: screen
+Description: Linux containers userspace tools - extras for debian
+ Containers are insulated areas inside a system, which have their own namespace
+ for filesystem, network, pids, ipc, cpu and memory allocation and which can be
+ created using the Control Group and Namespace features included in recent Linux
+ Kernels.
+ .
+ This package contains:
+ .
+ * An init script for dealing with containers on startup/shutdown
+ * lxc-debian - a (slightly) improved version of the lxc-debian that ships with
+   lxc, for building debian based containers
+ * lxc-halt - a script for safely shutting down a container (which the init
+   script will use)
+ * lxc-status - dumps running/not running state of all containers
+

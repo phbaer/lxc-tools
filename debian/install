@@ -1,0 +1,3 @@
+lxc-debian /usr/bin
+lxc-halt /usr/bin
+lxc-status /usr/bin
