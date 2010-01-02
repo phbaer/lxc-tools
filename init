@@ -51,15 +51,40 @@ do_start()
 
 do_stop()
 {
+    halt=$(which lxc-halt)
     for C in $CONTAINERS; do
         log_progress_msg "$C"
         if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
-            /usr/bin/lxc-stop -n $C
-            if [ $? -gt 0 ]; then
-                return 2
+            if [ -n "$halt" ]; then
+                $halt -n $C &
+            else
+                /usr/bin/lxc-stop -n $C
+                if [ $? -gt 0 ]; then
+                    return 2
+                fi
             fi
         fi
     done
+
+    if [ -n "$halt" ]; then
+        # Wait for all containers to be shutdown
+        starttime=$(date "+%s")
+        while true
+        do
+            if cat /var/lib/lxc/*/state | grep -vE "RUNNING|STOPPING" > /dev/null ; then
+                return 0
+            fi
+            sleep .25
+
+            curtime=$(date "+%s")
+
+            if [ $(( $curtime - $starttime )) -gt 30 ]; then
+                log_warning_msg "Containers have been stopping for longer than 30 seconds"
+                # TODO force their shutdown. And maybe 30 seconds isn't long enough
+                return 0
+            fi
+        done
+    fi
 }
 
 case "$1" in
