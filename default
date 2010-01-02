@@ -1,3 +1,6 @@
 # The command that will halt the container. You can use [container] as a
 # placeholder for the container name.
 SHUTDOWN_CMD="ssh [container] halt"
+
+# The time beyond which a container will be forcably shut down
+TIMEOUT=20
