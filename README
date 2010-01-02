@@ -51,10 +51,13 @@ init
 
 `init' is an init.d script you can install as /etc/init.d/lxc, that allows you
 to automatically start up and shut down containers on system start up/shut
-down. To specify the containers to start and stop, put this into
-/etc/default/lxc:
+down.
 
-CONTAINERS="name1 name2 name3"
+You can mark a container to be started on startup by doing this:
+
+echo 1 > /var/lib/lxc/$CONTAINER/autostart
+
+All containers will be stopped on shutdown, regardless of the autostart file.
 
 Note that this script will endeavour to use lxc-halt if it's in /usr/bin, see
 the docs for lxc-halt below for more information.
