@@ -173,7 +173,6 @@ lxc.network.link = br0
 lxc.network.name = eth0
 lxc.network.mtu = $MTU
 lxc.mount = $TMPMNTFILE
-lxc.rootfs = $ROOTFS
 lxc.cgroup.devices.deny = a
 # /dev/null and zero
 lxc.cgroup.devices.allow = c 1:3 rwm
@@ -238,7 +237,7 @@ collect_information() {
 	GATEWAY=$_GATEWAY_
     fi
 
-    ROOTFS="/var/lib/lxc/rootfs.$NAME"
+    ROOTFS="/var/lib/lxc/$NAME/rootfs"
     # choose the rootfs
     echo -n "Specify the location of the rootfs [$ROOTFS] "
     read _ROOTFS_
@@ -311,6 +310,7 @@ install_debian()
 	    
             # make a local copy of the minidebian
 	    echo -n "Copying rootfs ..."
+	    mkdir -p $(dirname $ROOTFS)
 	    cp -a $CACHE/rootfs-$ARCH $ROOTFS && echo "Done." || exit
 	) 200> "/var/lock/subsys/lxc"
     fi
@@ -338,11 +338,24 @@ create() {
 
     collect_information
 
-    install_debian
-
     write_lxc_mounts
 
     write_lxc_configuration
+
+    /usr/bin/lxc-create -n $NAME -f $CONFFILE
+    RES=$?
+
+    # remove the configuration files
+    rm -f $CONFFILE
+    rm -f $TMPMNTFILE
+
+    if [ "$RES" != "0" ]; then
+	echo "Failed to create '$NAME'"
+	exit 1
+    fi
+
+
+    install_debian
 
     write_debian_inittab
 
@@ -361,18 +374,6 @@ create() {
     disable_debian_services
 
     run_pre_create_hook
-
-    /usr/bin/lxc-create -n $NAME -f $CONFFILE
-    RES=$?
-
-    # remove the configuration files
-    rm -f $CONFFILE
-    rm -f $TMPMNTFILE
-
-    if [ "$RES" != "0" ]; then
-	echo "Failed to create '$NAME'"
-	exit 1
-    fi
 
     run_post_create_hooks
 
@@ -396,7 +397,7 @@ destroy() {
 	return $RETVAL;
     fi
 
-    ROOTFS="/var/lib/lxc/rootfs.$NAME"
+    ROOTFS="/var/lib/lxc/$NAME/rootfs"
 
     echo -n "Shall I remove the rootfs [y/n] ? "
     read
