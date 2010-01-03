@@ -272,8 +272,8 @@ create() {
     rm -f $TMPMNTFILE
 
     if [ "$RES" != "0" ]; then
-    echo "Failed to create '$NAME'"
-    exit 1
+        echo "Failed to create '$NAME'"
+        exit 1
     fi
 
 
