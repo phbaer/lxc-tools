@@ -7,7 +7,6 @@
 # Copyright (C) 2010 Nigel McNie
 #
 
-NAME="debian"
 CONFFILE="lxc.conf"
 MNTFILE=
 TMPMNTFILE=
@@ -190,13 +189,6 @@ write_lxc_mounts() {
 
 
 collect_information() {
-    # choose a container name, default is 'debian'
-    echo -n "What is the name for the container ? [$NAME] "
-    read _NAME_
-
-    if [ ! -z "$_NAME_" ]; then
-        NAME=$_NAME_
-    fi
 
     # choose a hostname, default is the container name
     echo -n "What hostname do you wish for this container ? [$NAME] "
@@ -347,20 +339,49 @@ Have fun :)
 EOF
 }
 
+usage() {
+    echo "Usage: $(readlink -f $0) {create|destroy} -n NAME"
+    exit 0
+}
+
+
+
+# Main program
+
+if [ $# = 0 ]; then
+    usage
+fi
+
+case "$1" in
+    -h|-help|--help) help;;
+esac
 
 if [ "$(id -u)" != "0" ]; then
     echo "This script should be run as 'root'"
     exit 1
 fi
 
-case "$1" in
-    create)
-    create;;
-    destroy)
-    destroy;;
-    help)
-    help;;
-    *)
-    echo "Usage: $0 {create|destroy|purge|help}"
-    exit 1;;
+NAME=""
+COMMAND=$1
+shift
+while getopts "n:" flag
+do
+    case $flag in
+        n) NAME="$OPTARG" ;;
+        *)
+            echo "Unknown argument: $flag"
+            exit 1
+            ;;
+    esac
+done
+
+if [ -z "$NAME" ]; then
+    echo "lxc-debian: missing container name, use -n option"
+    exit 1
+fi
+
+case "$COMMAND" in
+    create)   create;;
+    destroy)  destroy;;
+    *)        usage;;
 esac
