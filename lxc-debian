@@ -310,6 +310,16 @@ destroy() {
         exit
     fi
 
+    halt=$(which lxc-halt)
+    if lxc-info -n $NAME | grep RUNNING > /dev/null; then
+        if [ -n "$halt" ]; then
+            lxc-halt -n $NAME
+        else
+            lxc-stop -n $NAME
+        fi
+    fi
+    sleep .5
+
     rm -rf $ROOTFS
     /usr/bin/lxc-destroy -n $NAME
     RETVAL=$?
