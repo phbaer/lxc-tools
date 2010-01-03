@@ -64,6 +64,9 @@ iface lo inet loopback
 auto eth0
 iface eth0 inet dhcp
 EOF
+cat <<EOF >> $ROOTFS/etc/dhcp3/dhclient.conf
+send host-name "$UTSNAME";
+EOF
 }
 
 # Set the hostname for the container
@@ -236,7 +239,7 @@ install_debian()
     # download a mini debian into a cache
     echo "Downloading debian minimal ..."
     debootstrap --verbose --variant=minbase --arch=$ARCH \
-        --include ifupdown,locales,libui-dialog-perl,dialog,netbase,net-tools,iproute,openssh-server \
+        --include ifupdown,locales,libui-dialog-perl,dialog,netbase,net-tools,iproute,openssh-server,dhcp3-client \
         lenny $ROOTFS $DEBMIRROR
 
     RESULT=$?
