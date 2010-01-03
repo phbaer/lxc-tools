@@ -16,14 +16,6 @@ MTU="1500"
 DEBMIRROR=http://ftp.debian.org/debian
 FQDN=$(hostname --fqdn)
 
-# These paths are within the container so do not need to obey configure prefixes
-INTERFACES="/etc/network/interfaces"
-INITTAB="/etc/inittab"
-HOSTNAME="/etc/hostname"
-HOSTS="/etc/hosts"
-FSTAB="/etc/fstab"
-SSHD_CONFIG="/etc/ssh/sshd_config"
-PROFILE="/etc/profile"
 
 ################################################################################
 #                    debian custom configuration files
@@ -39,7 +31,7 @@ write_debian_selinux() {
 # custom fstab
 
 write_debian_fstab() {
-cat <<EOF > $ROOTFS/$FSTAB
+cat <<EOF > $ROOTFS/etc/fstab
 tmpfs  /dev/shm   tmpfs  defaults  0 0
 EOF
 }
@@ -47,7 +39,7 @@ EOF
 # custom inittab
 
 write_debian_inittab() {
-cat <<EOF > $ROOTFS/$INITTAB
+cat <<EOF > $ROOTFS/etc/inittab
 id:3:initdefault:
 si::sysinit:/etc/init.d/rcS
 l0:0:wait:/etc/init.d/rc 0
@@ -70,7 +62,7 @@ EOF
 # custom network configuration
 
 write_debian_network() {
-cat <<EOF > $ROOTFS/$INTERFACES
+cat <<EOF > $ROOTFS/etc/network/interfaces
 auto lo
 iface lo inet loopback
 
@@ -82,10 +74,10 @@ EOF
 # custom hostname
 
 write_debian_hostname() {
-cat <<EOF > $ROOTFS/$HOSTNAME
+cat <<EOF > $ROOTFS/etc/hostname
 $UTSNAME
 EOF
-cat <<EOF > $ROOTFS/$HOSTS
+cat <<EOF > $ROOTFS/etc/hosts
 127.0.0.1   $UTSNAME localhost
 
 # The following lines are desirable for IPv6 capable hosts
@@ -101,7 +93,7 @@ EOF
 # custom sshd configuration file
 
 write_debian_sshd_config() {
-cat <<EOF > $ROOTFS/$SSHD_CONFIG
+cat <<EOF > $ROOTFS/etc/ssh/sshd_config
 Port 22
 Protocol 2
 HostKey /etc/ssh/ssh_host_rsa_key
