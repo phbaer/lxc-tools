@@ -201,7 +201,7 @@ write_lxc_mounts() {
     TMPMNTFILE=$(mktemp lxc.XXXXXXXXXX)
 
     if [ ! -z "$MNTFILE" ]; then
-	cp $MNTFILE $TMPMNTFILE
+    cp $MNTFILE $TMPMNTFILE
     fi
 }
 
@@ -211,7 +211,7 @@ collect_information() {
     read _NAME_
 
     if [ ! -z "$_NAME_" ]; then
-	NAME=$_NAME_
+    NAME=$_NAME_
     fi
 
     # choose a hostname, default is the container name
@@ -219,9 +219,9 @@ collect_information() {
     read _UTSNAME_
 
     if [ ! -z "$_UTSNAME_" ]; then
-	UTSNAME=$_UTSNAME_
+    UTSNAME=$_UTSNAME_
     else
-	UTSNAME=$NAME
+    UTSNAME=$NAME
     fi
 
     # choose an ipv4 address, better to choose the same network than
@@ -230,7 +230,7 @@ collect_information() {
     read _IPV4_
 
     if [ ! -z "$_IPV4_" ]; then
-	IPV4=$_IPV4_
+    IPV4=$_IPV4_
     fi
 
     # choose the gateway ip address
@@ -238,7 +238,7 @@ collect_information() {
     read _GATEWAY_
 
     if [ ! -z "$_GATEWAY_" ]; then
-	GATEWAY=$_GATEWAY_
+    GATEWAY=$_GATEWAY_
     fi
 
     ROOTFS="/var/lib/lxc/$NAME/rootfs"
@@ -247,14 +247,14 @@ collect_information() {
     read _ROOTFS_
 
     if [ ! -z "$_ROOTFS_" ]; then
-	ROOTFS=$_ROOTFS_
+    ROOTFS=$_ROOTFS_
     fi
 
     echo -n "Specify the location for an extra fstab file [(none)] "
     read _MNTFILE_
 
     if [ ! -z "$_MNTFILE_" ]; then
-	MNTFILE=$_MNTFILE_
+    MNTFILE=$_MNTFILE_
     fi
 }
 
@@ -273,13 +273,13 @@ install_debian()
     if [ ! -z "$_DEBMIRROR_" ]; then
     DEBMIRROR=$_DEBMIRROR_
     fi
-    
-        # download a mini debian into a cache
+
+    # download a mini debian into a cache
     echo "Downloading debian minimal ..."
     debootstrap --verbose --variant=minbase --arch=$ARCH \
         --include ifupdown,locales,libui-dialog-perl,dialog,netbase,net-tools,iproute,openssh-server \
         lenny $ROOTFS $DEBMIRROR
-    
+
     RESULT=$?
     if [ "$RESULT" != "0" ]; then
         echo "Failed to download the rootfs, aborting."
@@ -321,8 +321,8 @@ create() {
     rm -f $TMPMNTFILE
 
     if [ "$RES" != "0" ]; then
-	echo "Failed to create '$NAME'"
-	exit 1
+    echo "Failed to create '$NAME'"
+    exit 1
     fi
 
 
@@ -358,14 +358,14 @@ destroy() {
     read _NAME_
 
     if [ ! -z "$_NAME_" ]; then
-	NAME=$_NAME_
+    NAME=$_NAME_
     fi
 
     /usr/bin/lxc-destroy -n $NAME
     RETVAL=$?
     if [ ! $RETVAL -eq 0 ]; then
-	echo "Failed to destroyed '$NAME'"
-	return $RETVAL;
+    echo "Failed to destroyed '$NAME'"
+    return $RETVAL;
     fi
 
     ROOTFS="/var/lib/lxc/$NAME/rootfs"
@@ -373,7 +373,7 @@ destroy() {
     echo -n "Shall I remove the rootfs [y/n] ? "
     read
     if [ "$REPLY" = "y" ]; then
-	rm -rf $ROOTFS
+    rm -rf $ROOTFS
     fi
 
     return 0
@@ -394,18 +394,18 @@ EOF
 
 
 if [ "$(id -u)" != "0" ]; then
-	echo "This script should be run as 'root'"
-	exit 1
-fi 
+    echo "This script should be run as 'root'"
+    exit 1
+fi
 
 case "$1" in
     create)
-	create;;
+    create;;
     destroy)
-	destroy;;
+    destroy;;
     help)
-	help;;
+    help;;
     *)
-	echo "Usage: $0 {create|destroy|purge|help}"
-	exit 1;;
+    echo "Usage: $0 {create|destroy|purge|help}"
+    exit 1;;
 esac
