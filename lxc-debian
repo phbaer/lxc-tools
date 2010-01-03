@@ -301,26 +301,21 @@ create() {
 
 destroy() {
 
-    echo -n "What is the name for the container ? [$NAME] "
-    read _NAME_
+    ROOTFS="/var/lib/lxc/$NAME/rootfs"
 
-    if [ ! -z "$_NAME_" ]; then
-        NAME=$_NAME_
+    echo -n "This will PERMANENTLY DESTROY the container $NAME. Are you sure? [y/N] ? "
+    read
+    if [ "$REPLY" != "y" ]; then
+        echo "Abort."
+        exit
     fi
 
+    rm -rf $ROOTFS
     /usr/bin/lxc-destroy -n $NAME
     RETVAL=$?
     if [ ! $RETVAL -eq 0 ]; then
         echo "Failed to destroyed '$NAME'"
-        return $RETVAL;
-    fi
-
-    ROOTFS="/var/lib/lxc/$NAME/rootfs"
-
-    echo -n "Shall I remove the rootfs [y/n] ? "
-    read
-    if [ "$REPLY" = "y" ]; then
-        rm -rf $ROOTFS
+        return $RETVAL
     fi
 
     return 0
