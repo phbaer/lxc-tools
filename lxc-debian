@@ -203,15 +203,6 @@ collect_information() {
         UTSNAME=$NAME
     fi
 
-    ROOTFS="/var/lib/lxc/$NAME/rootfs"
-    # choose the rootfs
-    echo -n "Specify the location of the rootfs [$ROOTFS] "
-    read _ROOTFS_
-
-    if [ ! -z "$_ROOTFS_" ]; then
-        ROOTFS=$_ROOTFS_
-    fi
-
     echo -n "Specify the location for an extra fstab file [(none)] "
     read _MNTFILE_
 
@@ -304,8 +295,6 @@ create() {
 
 destroy() {
 
-    ROOTFS="/var/lib/lxc/$NAME/rootfs"
-
     echo -n "This will PERMANENTLY DESTROY the container $NAME. Are you sure? [y/N] ? "
     read
     if [ "$REPLY" != "y" ]; then
@@ -387,6 +376,8 @@ if [ -z "$NAME" ]; then
     echo "lxc-debian: missing container name, use -n option"
     exit 1
 fi
+
+ROOTFS="/var/lib/lxc/$NAME/rootfs"
 
 case "$COMMAND" in
     create)   create;;
