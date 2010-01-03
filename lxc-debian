@@ -216,7 +216,7 @@ install_debian()
     ARCH=$(dpkg --print-architecture)
     case $ARCH in
         amd64) ARCH=amd64 ;;
-        i686 ) ARCH=i386 ;;
+        i386 ) ARCH=i386 ;;
         *    ) echo "Unsupported architecture $ARCH!"; exit 1; ;;
     esac
 
