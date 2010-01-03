@@ -1,7 +1,11 @@
 #!/bin/bash
-# set -ex
-
-CACHE="/var/cache/lxc/debian"
+#
+# Creates a debian based container
+#
+# This script is based on the lxc-debian example script that ships with lxc.
+#
+# Copyright (C) 2010 Nigel McNie
+#
 
 NAME="debian"
 CONFFILE="lxc.conf"
