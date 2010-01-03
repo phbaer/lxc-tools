@@ -213,11 +213,20 @@ collect_information() {
 
 install_debian()
 {
-    echo "Choose the architecture for the container"
-    select ARCH in amd64 i386; do
-        echo "Architecture $ARCH selected"
-        break;
-    done
+    ARCH=$(dpkg --print-architecture)
+    case $ARCH in
+        amd64) ARCH=amd64 ;;
+        i686 ) ARCH=i386 ;;
+        *    ) echo "Unsupported architecture $ARCH!"; exit 1; ;;
+    esac
+
+    echo "Choose the architecture for the container (choices as for deboostrap, e.g.: amd64, i386"
+    echo -n "Choice ? [$ARCH] "
+    read _ARCH_
+
+    if [ ! -z "$_ARCH_" ]; then
+        ARCH=$_ARCH_
+    fi
 
     # choose a mirror
     echo -n "Specify the debian mirror to use to download the rootfs [$DEBMIRROR] "
