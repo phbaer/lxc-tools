@@ -260,63 +260,30 @@ collect_information() {
 
 install_debian()
 {
-    # check if the rootfs does already exist
-    if [ ! -e "$ROOTFS" ]; then
-	    mkdir -p /var/lock/subsys/
-	(
-	    flock -n -x 200 
+    echo "Choose the architecture for the container"
+    select ARCH in amd64 i386; do
+    echo "Architecture $ARCH selected"
+    break;
+    done
 
+    # choose a mirror
+    echo -n "Specify the debian mirror to use to download the rootfs [$DEBMIRROR] "
+    read _DEBMIRROR_
 
-	    RES=$?
-	    if [ "$RES" != "0" ]; then
-		echo "Cache repository is busy."
-		break
-	    fi
-
-	    echo "Choose the architecture for the container"
-	    select ARCH in amd64 i386; do
-		echo "Architecture $ARCH selected"
-		break;
-	    done
-
-	    # check the mini debian was not already downloaded
-	    echo -n "Checking cache download ..."
-	    if [ ! -e "$CACHE/rootfs-$ARCH" ]; then
-		
-		echo "not cached"
-		
-		mkdir -p "$CACHE/partial-$ARCH"
-
-		# choose a mirror
-		echo -n "Specify the debian mirror to use to download the rootfs [$DEBMIRROR] "
-		read _DEBMIRROR_
-
-		if [ ! -z "$_DEBMIRROR_" ]; then
-		DEBMIRROR=$_DEBMIRROR_
-		fi
-		
-	        # download a mini debian into a cache
-		echo "Downloading debian minimal ..."
-		debootstrap --verbose --variant=minbase --arch=$ARCH \
-		    --include ifupdown,locales,libui-dialog-perl,dialog,netbase,net-tools,iproute,openssh-server \
-		    lenny $CACHE/partial-$ARCH $DEBMIRROR
-		
-		RESULT=$?
-		if [ "$RESULT" != "0" ]; then
-		    echo "Failed to download the rootfs, aborting."
-		    exit 1
-		fi
-		mv "$CACHE/partial-$ARCH" "$CACHE/rootfs-$ARCH"
-		echo "Download complete."
-	    else
-		echo "Found."
-	    fi
-	    
-            # make a local copy of the minidebian
-	    echo -n "Copying rootfs ..."
-	    mkdir -p $(dirname $ROOTFS)
-	    cp -a $CACHE/rootfs-$ARCH $ROOTFS && echo "Done." || exit
-	) 200> "/var/lock/subsys/lxc"
+    if [ ! -z "$_DEBMIRROR_" ]; then
+    DEBMIRROR=$_DEBMIRROR_
+    fi
+    
+        # download a mini debian into a cache
+    echo "Downloading debian minimal ..."
+    debootstrap --verbose --variant=minbase --arch=$ARCH \
+        --include ifupdown,locales,libui-dialog-perl,dialog,netbase,net-tools,iproute,openssh-server \
+        lenny $ROOTFS $DEBMIRROR
+    
+    RESULT=$?
+    if [ "$RESULT" != "0" ]; then
+        echo "Failed to download the rootfs, aborting."
+        exit 1
     fi
 
 }
@@ -420,50 +387,11 @@ This script is a helper to create debian system containers.
 The script will create the container configuration file following
 the informations submitted interactively with 'lxc-debian create'
 
-The first creation will download, with debootstrap, a debian
-minimal and store it into a cache.
-
-The script will copy from the cache the root filesystem to the
-current directory.
-
-If there is a problem with the container, (bad configuration for 
-example), you can destroy the container with 'lxc-debian destroy'
-but without removing the rootfs and recreate it again with
-'lxc-debian create'.
-
-If you want to create another debian container, call the 'lxc-debian
- create' again, specifying another name and new parameters.
-
-At any time you can purge the debian cache download by calling 
-'lxc-debian purge'
-
 Have fun :)
 
 EOF
 }
 
-purge() {
-
-    if [ ! -e $CACHE ]; then
-	exit 0
-    fi
-
-    # lock, so we won't purge while someone is creating a repository
-    (
-	flock -n -x 200 
-
-	RES=$?
-	if [ "$RES" != "0" ]; then
-	    echo "Cache repository is busy."
-	    exit 1
-	fi
-
-	echo -n "Purging the download cache..."
-	rm --preserve-root --one-file-system -rf $CACHE && echo "Done." || exit 1
-	exit 0
-
-    ) 200> "/var/lock/subsys/lxc"
-}
 
 if [ "$(id -u)" != "0" ]; then
 	echo "This script should be run as 'root'"
@@ -477,8 +405,6 @@ case "$1" in
 	destroy;;
     help)
 	help;;
-    purge)
-	purge;;
     *)
 	echo "Usage: $0 {create|destroy|purge|help}"
 	exit 1;;
