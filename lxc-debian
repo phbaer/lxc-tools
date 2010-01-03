@@ -12,8 +12,6 @@ CONFFILE="lxc.conf"
 MNTFILE=
 TMPMNTFILE=
 UTSNAME=
-IPV4="172.20.0.21"
-GATEWAY="172.20.0.1"
 MTU="1500"
 DEBMIRROR=http://ftp.debian.org/debian
 FQDN=$(hostname --fqdn)
@@ -73,14 +71,11 @@ EOF
 
 write_debian_network() {
 cat <<EOF > $ROOTFS/$INTERFACES
-auto eth0 lo
-iface eth0 inet static
-address $IPV4
-netmask 255.255.255.0
-broadcast 0.0.0.0
-mtu $MTU
-up route add default gw $GATEWAY
+auto lo
 iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
 EOF
 }
 
@@ -91,8 +86,7 @@ cat <<EOF > $ROOTFS/$HOSTNAME
 $UTSNAME
 EOF
 cat <<EOF > $ROOTFS/$HOSTS
-$IPV4       $UTSNAME.$FQDN  $UTSNAME
-127.0.0.1   localhost
+127.0.0.1   $UTSNAME localhost
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback
@@ -222,23 +216,6 @@ collect_information() {
     UTSNAME=$_UTSNAME_
     else
     UTSNAME=$NAME
-    fi
-
-    # choose an ipv4 address, better to choose the same network than
-    # your host
-    echo -n "What IP address do you wish for this container ? [$IPV4] "
-    read _IPV4_
-
-    if [ ! -z "$_IPV4_" ]; then
-    IPV4=$_IPV4_
-    fi
-
-    # choose the gateway ip address
-    echo -n "What is the gateway IP address ? [$GATEWAY] "
-    read _GATEWAY_
-
-    if [ ! -z "$_GATEWAY_" ]; then
-    GATEWAY=$_GATEWAY_
     fi
 
     ROOTFS="/var/lib/lxc/$NAME/rootfs"
