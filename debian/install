@@ -1,3 +1,4 @@
 lxc-debian /usr/bin
+lxc-ubuntu /usr/bin
 lxc-halt /usr/bin
 lxc-status /usr/bin

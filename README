@@ -9,6 +9,10 @@ http://nigel.mcnie.name/blog/a-five-minute-guide-to-linux-containers-for-debian
 All of these scripts are released under the terms of the GNU GPL, version 3 or
 later.
 
+Added a preliminary script for Ubuntu Lucid (basically adding a function for
+modifying the Upstart init script). Installs on an LVM partition; unfortunately
+hard-coded at the moment.
+
 lxc-debian
 ----------
 
@@ -45,6 +49,15 @@ added some hooks:
         Script that runs in the container after creation. It's run by chrooting
         in, so naturally it doesn't have access to variables, though you can
         get at that information through other ways (e.g. /etc/hostname).
+
+lxc-ubuntu
+----------
+
+Works just like the lxc-debian script but installs Ubuntu Lucid. Not tested
+with older versions and pretty unflexible so far. In order to install and boot
+Ubuntu 10.04 in LXC, the /etc/init/rc-sysinit.conf has to be modified:
+
+    sed -i 's/start on filesystem and net-device-up IFACE=lo/start on filesystem #and net-device-up IFACE=lo/' $ROOTFS/etc/init/rc-sysinit.conf
 
 init
 ----

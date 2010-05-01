@@ -1,0 +1,443 @@
+#!/bin/bash
+#
+# Creates a ubuntu based container
+#
+# This script is based on the lxc-ubuntu example script that ships with lxc.
+#
+# Copyright (C) 2010 Nigel McNie
+# Modified for Ubuntu 2010 phbaer
+#
+
+CONFFILE="lxc.conf"
+MNTFILE=
+TMPMNTFILE=
+UTSNAME=
+MTU="1500"
+DEBMIRROR=http://archive.ubuntu.com/ubuntu
+FQDN=$(hostname --fqdn)
+
+
+################################################################################
+#                    ubuntu custom configuration files
+################################################################################
+
+# Disable selinux in the container
+write_ubuntu_selinux() {
+    mkdir -p $ROOTFS/selinux
+    echo 0 > $ROOTFS/selinux/enforce
+}
+
+# Write out a custom fstab
+write_ubuntu_fstab() {
+cat <<EOF > $ROOTFS/etc/fstab
+tmpfs  /dev/shm   tmpfs  defaults  0 0
+EOF
+}
+
+# Write out network config (dhcp)
+write_ubuntu_network() {
+cat <<EOF > $ROOTFS/etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+EOF
+cat <<EOF >> $ROOTFS/etc/dhcp3/dhclient.conf
+send host-name "$UTSNAME";
+EOF
+}
+
+# Set the hostname for the container
+write_ubuntu_hostname() {
+cat <<EOF > $ROOTFS/etc/hostname
+$UTSNAME
+EOF
+cat <<EOF > $ROOTFS/etc/hosts
+127.0.0.1   $UTSNAME localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+EOF
+}
+
+# Writes a custom ssh config that allows root logins
+write_ubuntu_sshd_config() {
+cat <<EOF > $ROOTFS/etc/ssh/sshd_config
+Port 22
+Protocol 2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_dsa_key
+UsePrivilegeSeparation yes
+KeyRegenerationInterval 3600
+ServerKeyBits 768
+SyslogFacility AUTH
+LogLevel INFO
+LoginGraceTime 120
+PermitRootLogin yes
+StrictModes yes
+RSAAuthentication yes
+PubkeyAuthentication yes
+IgnoreRhosts yes
+RhostsRSAAuthentication no
+HostbasedAuthentication no
+PermitEmptyPasswords yes
+ChallengeResponseAuthentication no
+EOF
+}
+
+# Autoconfigures packages in the container so no debconf questions are asked
+# when it's made
+reconfigure_ubuntu_packages() {
+    default_environment_locale=$(debconf-show locales | grep default_environment_locale | cut -f 2 -d :)
+    locales_to_be_generated=$(debconf-show locales | grep locales_to_be_generated | cut -f 2 -d :)
+    tzdata_area=$(debconf-show tzdata | grep Areas | cut -f 2 -d :)
+    tzdata_zone=$(debconf-show tzdata | grep Zones/${tzdata_area:1} | cut -f 2 -d :)
+
+    cat <<EOF | chroot $ROOTFS sh
+#!/bin/sh
+apt-get install --force-yes -y language-pack-en
+update-locale LANG="en_GB.UTF-8" LANGUAGE="en_GB.UTF-8" LC_ALL="en_GB.UTF-8"
+EOF
+}
+
+disable_upstart_mounts() {
+    cat <<EOF > $ROOTFS/lib/init/fstab
+#
+# These are the filesystems that are always mounted on boot, you can
+# override any of these by copying the appropriate line from this file into
+# /etc/fstab and tweaking it as you see fit.  See fstab(5).
+#
+# <file system> <mount point>             <type>          <options>                    <dump> <pass>
+/dev/root       /                         rootfs          defaults                          0 1
+#none            /proc                     proc            nodev,noexec,nosuid               0 0
+none            /proc/sys/fs/binfmt_misc  binfmt_misc     nodev,noexec,nosuid,optional      0 0
+#none            /sys                      sysfs           nodev,noexec,nosuid               0 0
+none            /sys/fs/fuse/connections  fusectl         optional                          0 0
+none            /sys/kernel/debug         debugfs         optional                          0 0
+none            /sys/kernel/security      securityfs      optional                          0 0
+none            /spu                      spufs           gid=spu,optional                  0 0
+#none            /dev                      devtmpfs,tmpfs  mode=0755                         0 0
+none            /dev/pts                  devpts          noexec,nosuid,gid=tty,mode=0620   0 0
+none            /dev/shm                  tmpfs           nosuid,nodev                      0 0
+none            /tmp                      none            defaults                          0 0
+none            /var/run                  tmpfs           mode=0755,nosuid,showthrough      0 0
+none            /var/lock                 tmpfs           nodev,noexec,nosuid,showthrough   0 0
+none            /lib/init/rw              tmpfs           mode=0755,nosuid,optional         0 0
+EOF
+}
+
+modify_upstart_sysinit() {
+    sed -i 's/start on filesystem and net-device-up IFACE=lo/start on filesystem #and net-device-up IFACE=lo/' $ROOTFS/etc/init/rc-sysinit.conf
+}
+
+write_upstart_lxc() {
+    cat <<EOF > $ROOTFS/etc/init/lxc.conf
+# LXC – Fix init sequence to have LXC containers boot with upstart
+
+# description “Fix LXC container - Lucid”
+
+start on startup
+
+task
+pre-start script
+mount -t proc proc /proc
+mount -t devpts devpts /dev/pts
+mount -t sysfs sys /sys
+mount -t tmpfs varrun /var/run
+mount -t tmpfs varlock /var/lock
+mkdir -p /var/run/network
+touch /var/run/utmp
+chmod 664 /var/run/utmp
+chown root.utmp /var/run/utmp
+if [ "$(find /etc/network/ -name upstart -type f)" ]; then
+chmod -x /etc/network/*/upstart || true
+fi
+end script
+
+script
+start networking
+initctl emit filesystem --no-wait
+initctl emit local-filesystems --no-wait
+initctl emit virtual-filesystems --no-wait
+init 2
+end script
+EOF
+mkdir -p $ROOTFS/var/run/network
+touch $ROOTFS/var/run/network/ifstate
+mkdir -p $ROOTFS/var/run/sshd
+}
+
+# Disables services a container doesn't need
+disable_ubuntu_services() {
+    chroot $ROOTFS /usr/sbin/update-rc.d -f umountfs remove
+    chroot $ROOTFS /usr/sbin/update-rc.d -f hwclock.sh remove
+    chroot $ROOTFS /usr/sbin/update-rc.d -f hwclockfirst.sh remove
+}
+
+
+################################################################################
+#                        lxc configuration files
+################################################################################
+
+write_lxc_configuration() {
+cat <<EOF > $CONFFILE
+lxc.utsname = $UTSNAME
+lxc.tty = 6
+lxc.pts = 1024
+lxc.network.type = veth
+lxc.network.flags = up
+lxc.network.link = br0
+lxc.network.name = eth0
+lxc.network.mtu = $MTU
+lxc.rootfs = $ROOTFS
+#lxc.mount = $TMPMNTFILE
+lxc.cgroup.devices.deny = a
+# /dev/null and zero
+lxc.cgroup.devices.allow = c 1:3 rwm
+lxc.cgroup.devices.allow = c 1:5 rwm
+# consoles
+lxc.cgroup.devices.allow = c 5:1 rwm
+lxc.cgroup.devices.allow = c 5:0 rwm
+lxc.cgroup.devices.allow = c 4:0 rwm
+lxc.cgroup.devices.allow = c 4:1 rwm
+# /dev/{,u}random
+lxc.cgroup.devices.allow = c 1:9 rwm
+lxc.cgroup.devices.allow = c 1:8 rwm
+lxc.cgroup.devices.allow = c 136:* rwm
+lxc.cgroup.devices.allow = c 5:2 rwm
+# rtc
+lxc.cgroup.devices.allow = c 254:0 rwm
+EOF
+}
+
+write_lxc_mounts() {
+
+    TMPMNTFILE=$(mktemp lxc.XXXXXXXXXX)
+
+    if [ ! -z "$MNTFILE" ]; then
+    cp $MNTFILE $TMPMNTFILE
+    fi
+}
+
+
+collect_information() {
+
+    # choose a hostname, default is the container name
+    echo -n "What hostname do you wish for this container ? [$NAME] "
+    read _UTSNAME_
+
+    if [ ! -z "$_UTSNAME_" ]; then
+        UTSNAME=$_UTSNAME_
+    else
+        UTSNAME=$NAME
+    fi
+
+    echo -n "Specify the location for an extra fstab file [(none)] "
+    read _MNTFILE_
+
+    if [ ! -z "$_MNTFILE_" ]; then
+        MNTFILE=$_MNTFILE_
+    fi
+}
+
+install_ubuntu()
+{
+    ARCH=$(dpkg --print-architecture)
+    case $ARCH in
+        amd64) ARCH=amd64 ;;
+        i386 ) ARCH=i386 ;;
+        *    ) echo "Unsupported architecture $ARCH!"; exit 1; ;;
+    esac
+
+    echo "Choose the architecture for the container (choices as for deboostrap, e.g.: amd64, i386"
+    echo -n "Choice ? [$ARCH] "
+    read _ARCH_
+
+    if [ ! -z "$_ARCH_" ]; then
+        ARCH=$_ARCH_
+    fi
+
+    # choose a mirror
+    echo -n "Specify the ubuntu mirror to use to download the rootfs [$DEBMIRROR] "
+    read _DEBMIRROR_
+
+    if [ ! -z "$_DEBMIRROR_" ]; then
+        DEBMIRROR=$_DEBMIRROR_
+    fi
+
+    # download a mini ubuntu into a cache
+    echo "Downloading ubuntu minimal ..."
+    debootstrap --verbose --variant=minbase --arch=$ARCH \
+        --include ifupdown,locales,netbase,net-tools,iproute,openssh-server,dhcp3-client,gpgv,adduser,apt-utils,vim,openssh-blacklist,openssh-blacklist-extra,console-setup,sudo,iputils-ping,aptitude,ubuntu-minimal \
+        lucid $ROOTFS $DEBMIRROR
+
+    RESULT=$?
+    if [ "$RESULT" != "0" ]; then
+        echo "Failed to download the rootfs, aborting."
+        exit 1
+    fi
+
+}
+
+run_pre_create_hook() {
+    # source a hook that's run before the container is created
+    # sourced so it has access to our variables, like $NAME
+    test -x /etc/lxc-ubuntu/host-pre-create && . /etc/lxc-ubuntu/host-pre-create
+}
+
+run_post_create_hooks() {
+    # source host and guest hooks for after the container is created
+    test -x /etc/lxc-ubuntu/host-post-create && . /etc/lxc-ubuntu/host-post-create
+
+    if [ -x /etc/lxc-ubuntu/guest-post-create ]; then
+        cp /etc/lxc-ubuntu/guest-post-create $ROOTFS/guest-post-create
+        chroot $ROOTFS /bin/bash /guest-post-create
+        chroot $ROOTFS /bin/rm /guest-post-create
+    fi
+}
+
+create() {
+
+    collect_information
+    write_lxc_mounts
+    write_lxc_configuration
+
+    /usr/bin/lxc-create -n $NAME -f $CONFFILE
+    RES=$?
+
+    # remove the configuration files
+    rm -f $CONFFILE
+    rm -f $TMPMNTFILE
+
+    if [ "$RES" != "0" ]; then
+        echo "Failed to create '$NAME'"
+        exit 1
+    fi
+
+    mkdir -p $ROOTFS
+    mount /dev/vg0/lxc-$NAME $ROOTFS
+    RES=$?
+
+    if [ "$RES" != "0" ]; then
+        echo "Failed to mount /dev/vg0/lxc-$NAME"
+        lxc-destroy -n $NAME
+        exit 1
+    fi
+
+    install_ubuntu
+    write_ubuntu_hostname
+    write_ubuntu_fstab
+    write_ubuntu_network
+    write_ubuntu_sshd_config
+    write_ubuntu_selinux
+    reconfigure_ubuntu_packages
+    disable_ubuntu_services
+    run_pre_create_hook
+    run_post_create_hooks
+    disable_upstart_mounts
+    modify_upstart_sysinit
+    write_upstart_lxc
+ 
+
+    echo "Done."
+    echo -e "\nYou can run your container with the 'lxc-start -n $NAME'\n"
+}
+
+destroy() {
+
+    echo -n "This will PERMANENTLY DESTROY the container $NAME. Are you sure? [y/N] ? "
+    read
+    if [ "$REPLY" != "y" ]; then
+        echo "Abort."
+        exit
+    fi
+
+    halt=$(which lxc-halt)
+    if lxc-info -n $NAME | grep RUNNING > /dev/null; then
+        if [ -n "$halt" ]; then
+            lxc-halt -n $NAME
+        else
+            lxc-stop -n $NAME
+        fi
+    fi
+    sleep .5
+
+    rm -rf $ROOTFS
+    /usr/bin/lxc-destroy -n $NAME
+    RETVAL=$?
+    if [ ! $RETVAL -eq 0 ]; then
+        echo "Failed to destroyed '$NAME'"
+        return $RETVAL
+    fi
+
+    return 0
+}
+
+help() {
+    cat <<EOF
+
+This script is a helper to create ubuntu system containers.
+
+The script will create the container configuration file following
+the informations submitted interactively with 'lxc-ubuntu create'
+
+Have fun :)
+
+EOF
+}
+
+usage() {
+    echo "Usage: $(readlink -f $0) {create|destroy} -n NAME"
+    exit 0
+}
+
+
+
+# Main program
+
+if [ $# = 0 ]; then
+    usage
+fi
+
+case "$1" in
+    -h|-help|--help) help;;
+esac
+
+if [ "$(id -u)" != "0" ]; then
+    echo "This script should be run as 'root'"
+    exit 1
+fi
+
+NAME=""
+COMMAND=$1
+shift
+while getopts "n:" flag
+do
+    case $flag in
+        n) NAME="$OPTARG" ;;
+        *)
+            echo "Unknown argument: $flag"
+            exit 1
+            ;;
+    esac
+done
+
+if [ -z "$NAME" ]; then
+    echo "lxc-ubuntu: missing container name, use -n option"
+    exit 1
+fi
+
+CONFFILE="/var/lib/lxc/$NAME.conf"
+ROOTFS="/var/lib/lxc/$NAME/rootfs"
+
+case "$COMMAND" in
+    create)   create;;
+    destroy)  destroy;;
+    *)        usage;;
+esac

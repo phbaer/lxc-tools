@@ -23,6 +23,7 @@ Description: Linux containers userspace tools - extras for debian
  * An init script for dealing with containers on startup/shutdown
  * lxc-debian - a (slightly) improved version of the lxc-debian that ships with
    lxc, for building debian based containers
+ * lxc-ubuntu - a (slightly) modified version of the new lxc-debian for Ubuntu Lucid
  * lxc-halt - a script for safely shutting down a container (which the init
    script will use)
  * lxc-status - dumps running/not running state of all containers
