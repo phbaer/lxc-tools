@@ -2,3 +2,11 @@ lxc-debian /usr/bin
 lxc-ubuntu /usr/bin
 lxc-halt /usr/bin
 lxc-status /usr/bin
+
+lxc-watchdog.sh /usr/sbin
+lxc-provider/bin/lxc-provider /usr/sbin
+lxc-provider/bin/lxc-template /usr/sbin
+lxc-provider/doc/README /usr/share/doc/lxc-tools/README.lxc-provider
+lxc-provider/etc/* /etc/lxc-provider
+lxc-provider/libexec/* /usr/libexec/lxc-provider
+

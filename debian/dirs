@@ -1,3 +1,8 @@
 usr/bin
+usr/sbin
+usr/share/doc/lxc-tools
 etc/init.d
 etc/default
+etc/lxc-provider
+usr/libexec/lxc-provider
+

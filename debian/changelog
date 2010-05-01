@@ -1,6 +1,6 @@
-lxc-debian (0.1.0-1) unstable; urgency=low
+lxc-tools (0.1.0-1) unstable; urgency=low
 
   * Initial release
 
- -- Nigel McNie <nigel@mcnie.name>  Sat,  2 Jan 2010 20:58:34 +1300
+ -- Philipp A. Baer <phbaer-github@npw.net>  Sat,  1 May 2010 14:53:13 +0200
 
