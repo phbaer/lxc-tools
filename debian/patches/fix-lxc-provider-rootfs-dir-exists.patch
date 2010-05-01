@@ -1,4 +1,12 @@
-The lxc-provider scripts check whether the new container's destination directory (rootfs) exists already. If installing into, e.g. a dedicated lvm partition, the script will fail. This patch disables the relevant checks.
+The lxc-provider scripts check whether the new container's destination
+directory (rootfs) exists already. If installing into, e.g. a dedicated lvm
+partition, the script will fail. This patch changes two things:
+
+ * Disables the parts in the script that test the rootfs directory.
+ * If the destination directory exists, the the temp directory itself is moved
+   to the rootfs instead of moving only the contents. Now, first the the
+   destination directory ist created before the contents of the temp directory
+   are moved (no hidden files!).
 --- a/lxc-provider/libexec/functions.sh
 +++ b/lxc-provider/libexec/functions.sh
 @@ -427,7 +427,7 @@
@@ -10,3 +18,18 @@ The lxc-provider scripts check whether the new container's destination directory
          [[ -d ${lxc_PATH_ROOTFS} ]] || die "dir where container's rootfs will be doesn't exists : ${lxc_PATH_ROOTFS}"
  
          if [[ -d "${lxc_TMP_ROOTFS}" ]]
+@@ -453,8 +453,12 @@
+                 ${script} || die "${script} failed"
+         done
+ 
+-        #OK commit cache
+-        mv "${lxc_TMP_ROOTFS}" "${lxc_CONTAINER_ROOTFS}" || die "mv ${lxc_TMP_ROOTFS} ${lxc_CONTAINER_ROOTFS} failed"
++        #OK commit cache; create rootfs dir if required
++        if [ ! -d ${lxc_CONTAINER_ROOTFS} ]; then
++                mkdir -p ${lxc_CONTAINER_ROOTFS}
++        fi
++        #move temp to rootfs (no hidden files)
++        mv "${lxc_TMP_ROOTFS}"/* "${lxc_CONTAINER_ROOTFS}" || die "mv ${lxc_TMP_ROOTFS} ${lxc_CONTAINER_ROOTFS} failed"
+         log "${lxc_TMP_ROOTFS} commited"
+         lxc-create -n ${lxc_CONTAINER_NAME} -f ${lxc_TMP_CONFIGDIR}/config || die "Failed to create '${lxc_CONTAINER_NAME}'"
+ }
