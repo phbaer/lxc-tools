@@ -164,8 +164,8 @@ lxc_watchdog() {
 			lxc_log "$name $tasks tasks"
 		fi
 
-		# time of 5 minutes on it JUST IN CASE...
-		inotifywait -qqt 300 ${vps_utmp}
+		# poll every 5 seconds
+		inotifywait -qqt 5 ${vps_utmp}
 	done
 
 	lxc_log "$name watchdog exited"
