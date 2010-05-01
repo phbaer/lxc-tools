@@ -1,0 +1,12 @@
+The lxc-provider scripts check whether the new container's destination directory (rootfs) exists already. If installing into, e.g. a dedicated lvm partition, the script will fail. This patch disables the relevant checks.
+--- a/lxc-provider/libexec/functions.sh
++++ b/lxc-provider/libexec/functions.sh
+@@ -427,7 +427,7 @@
+ 
+         #do some checks
+         [[ -f ${lxc_TEMPLATE_ARCHIVE} ]] || die "The template ${lxc_TEMPLATE_ARCHIVE} is not available"
+-        [[ -d ${lxc_CONTAINER_ROOTFS} ]] && die "Rootfs dir ${lxc_CONTAINER_ROOTFS} already exists"
++#        [[ -d ${lxc_CONTAINER_ROOTFS} ]] && die "Rootfs dir ${lxc_CONTAINER_ROOTFS} already exists"
+         [[ -d ${lxc_PATH_ROOTFS} ]] || die "dir where container's rootfs will be doesn't exists : ${lxc_PATH_ROOTFS}"
+ 
+         if [[ -d "${lxc_TMP_ROOTFS}" ]]

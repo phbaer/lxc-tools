@@ -1,3 +1,10 @@
+lxc-tools (0.1.0-2) unstable; urgency=low
+
+  * Patched lxc-provider's functions.sh (dropped check for rootfs directory
+  * Allows to install containers into existing directories (e.g. lvm volumes)
+
+ -- Philipp A. Baer <phbaer-github@npw.net>  Sat, 01 May 2010 16:24:55 +0200
+
 lxc-tools (0.1.0-1) unstable; urgency=low
 
   * Initial release

@@ -1,45 +1,4 @@
 #!/usr/bin/make -f
-# debian/rules for lxc-debian
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-
-build:
-
-clean:
-	dh_testdir
-	dh_testroot
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_clean -k
-	dh_installdirs
-	dh_install
-
-## Build architecture-dependent files here.
-binary-arch: install
-	dh_testdir
-	dh_testroot
-	dh_installdocs README
-	#dh_installexamples
-	#dh_installman
-	#dh_link
-	dh_installchangelogs
-	dh_installinit --no-start -r --name=lxc -- defaults 91 09
-	dh_install
-	dh_compress
-	dh_fixperms
-	dh_installdeb
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-arch
-
-.PHONY: build clean install
-
-# Local variables:
-# mode: makefile
-# End:
+%:
+	dh --with quilt $@
