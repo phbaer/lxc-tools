@@ -1,0 +1,1 @@
+dpkg-buildpackage -rfakeroot -I.git -I.gitignore -I.gitmodules -i'\.git.*'
