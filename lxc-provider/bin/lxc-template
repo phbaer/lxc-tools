@@ -1,0 +1,54 @@
+#!/bin/bash
+
+export LANG="C"
+
+#Assoiative arrays
+declare -A TemplateTree
+declare -A TemplateCacheFile
+
+lxc_MODE="templating"
+
+Conf=/etc/lxc-provider/general.conf
+. ${Conf}
+. ${lxc_PATH_LIBEXEC}/functions.sh
+
+[[ -d ${lxc_PATH_ROOTFS} ]] || die "Please configure lxc_PATH_ROOTFS in $Conf"
+
+localusage() {
+	myname=$(basename $0)
+	echo "Usage:"
+	echo "${myname} create|debuginfo"
+	echo -e "\tcreate, create template"
+	echo -e "\tdebuginfo, load and display computed conf without template creation"
+	echo
+	echo "${myname} list"
+	echo -e "\tlist available templates"
+	exit 0
+}
+
+# Action control
+[[ -z $1 ]] && localusage
+c_InArray $1 create list debuginfo || localusage
+
+# Load Current Templates version
+. ${lxc_PATH_ETC}/templating/version.conf || die "enable to load ${lxc_PATH_ETC}/templating/version.conf"
+
+# Load Available Templates
+c_LoadAvailable "template" ${lxc_PATH_ETC}/templating
+
+# Load Available Template Cache Archives
+t_LoadCacheArchives ${lxc_PATH_TEMPLATE} ${lxc_TEMPLATE_VERSION}
+
+case $1 in
+	create)
+		t_LoadConf
+		t_Create ;;
+	list)	t_List ;;
+	debuginfo)
+		t_LoadConf
+		c_DebugInfo ;;
+	*) localusage ;;
+esac
+
+exit 0
+

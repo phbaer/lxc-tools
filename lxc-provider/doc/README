@@ -1,0 +1,89 @@
+= Description =
+This suite of scripts and configuration files helps you make "ready to run" containers.
+
+= How it works =
+Deployement of new container is done in 2 steps :
+ - templating
+ 	- build a template (minimal distribution ready to be containerized)
+ - Provisioning
+ 	- create the container
+
+= Install =
+
+ - From tarball
+ tar xvzf lxc-provider-0.4.0-beta2.tgz
+ cd lxc-provider
+ cp bin/* /usr/sbin/
+ mkdir -p /var/cache/lxc-provider
+ mkdir -p /var/tmp/lxc-provider
+ mkdir -p /var/lib/lxc-provider
+ mkdir -p /usr/share/doc/lxc-provider
+ cp doc/* /usr/share/doc/lxc-provider/
+ cp -r etc /etc/lxc-provider
+ cp -r libexec /usr/libexec/lxc-provider
+
+ - From gentoo overlay 
+ edit /etc/layman/layman.cfg
+ add http://lxc-provider.sourceforge.net/gentoo-overlay.xml to overlays list
+ layman -L
+ layman -a lxc-provider
+ emerge -av lxc-provider
+
+ - All 
+ in /etc/lxc-provider/general.conf, edit the following line :
+ lxc_PATH_ROOTFS="PLEASE SET THIS"
+ please specify which dir will be used to store containers's rootfs
+
+= Usage =
+To install a debian lenny:
+ - Check network settings in /etc/lxc-provider/provisioning/net.conf
+
+ - Mount cgroup
+# mkdir /cgroup
+# mount -t cgroup none /cgroup
+
+ - Make your ethernet bridge is up
+# brctl addbr br0
+
+ - set ip address for your bridge
+# ifconfig br0 10.0.0.254 netmask 255.0.0.0
+
+ - Let's make a template
+# lxc-template create
+When prompted, select which template to build
+
+ - make the container
+# lxc-provider create -i 10.0.0.100 -n mycontainer
+When prompted, select an available template
+
+ - start the container here in screen
+# screen lxc-start -n mycontainer
+
+ - log in the container
+# ssh 10.0.0.100
+or
+# lxc-console -n mycontainer
+(default root password is "toor")
+
+= Available templating conf =
+ - debian.lenny
+ - ubuntu.hardy
+ - ubuntu.intrepid
+ - ubuntu.jaunty
+ - ubuntu.karmic
+ - ubuntu.lucid
+ - debian.lenny.32
+ - ubuntu.hardy.32
+ - ubuntu.intrepid.32
+ - ubuntu.jaunty.32
+ - ubuntu.karmic.32
+ - ubuntu.lucid.32
+
+ NB: default arch is 64 bit, please use .32 ones if you want 32 bit container
+
+= Todo =
+ - templates conf gentoo, centos
+ - more tests
+ - write updates procedures for containers created with older lxc-provider
+ - packaging (gentoo done, do debian end redhat)
+
