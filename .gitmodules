@@ -1,3 +1,0 @@
-[submodule "lxc-provider"]
-	path = lxc-provider
-	url = git://lxc-provider.git.sourceforge.net/gitroot/lxc-provider/lxc-provider
