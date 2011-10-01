@@ -98,6 +98,11 @@ update-locale LANG="en_GB.UTF-8" LANGUAGE="en_GB.UTF-8" LC_ALL="en_GB.UTF-8"
 EOF
 }
 
+# set root's password to 'lxc'
+reset_root_password() {
+    sed -i 's%^root:.*%root:$6$EEGUnn6e$DkpHEGpLyyFW/QePxZjsTvix9E7c8YPdH6RF4BYx8yagQMySPYkmjKMPLyrE7ZpNxUh0huqMCfSLcIct7/puH/:15248:0:99999:7:::%' $rootfs/etc/shadow
+}
+
 disable_upstart_mounts() {
     cat <<EOF > $rootfs/lib/init/fstab
 #
@@ -337,7 +342,7 @@ create() {
     disable_upstart_mounts
     modify_upstart_sysinit
     write_upstart_lxc
- 
+    reset_root_password
 
     echo "Done."
     echo -e "\nYou can run your container with the 'lxc-start -n $utsname'\n"
