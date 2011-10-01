@@ -9,15 +9,6 @@
 # Modified some more 2011 David Schoen
 #
 
-conffile="lxc.conf"
-mntfile=
-tmpmntfile=
-utsname=
-mtu="1500"
-debmirror=http://archive.ubuntu.com/ubuntu
-fqdn=$(hostname --fqdn)
-
-
 ################################################################################
 #                    ubuntu custom configuration files
 ################################################################################
@@ -373,7 +364,7 @@ destroy() {
     /usr/bin/lxc-destroy -n $name
     RETVAL=$?
     if [ ! $RETVAL -eq 0 ]; then
-        echo "Failed to destroyed '$name'"
+        echo "Failed to destroy '$name'"
         return $RETVAL
     fi
 
@@ -388,7 +379,8 @@ usage() {
     echo "This script is a helper to create ubuntu system containers."
     echo 
     echo "The script will create the container configuration file following"
-    echo "the informations submitted interactively with 'lxc-ubuntu create'"
+    echo "the information submitted interactively with 'lxc-ubuntu create'"
+    echo "or as options outlined below."
     echo
     echo "Command:"
     echo "  create: Create a new lxc"
@@ -412,8 +404,6 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-name=""
-command=""
 
 # parse cli args
 while true; do
@@ -442,15 +432,24 @@ while true; do
     shift
 done
 
+name="${name:-}"
+command="${command:-}"
+mntfile=
+tmpmntfile=
+utsname=
+mtu="1500"
+debmirror=http://archive.ubuntu.com/ubuntu
+fqdn=$(hostname --fqdn)
+conffile="/var/lib/lxc/$name.conf"
+rootfs="/var/lib/lxc/$name/rootfs"
+
+# Check arguments
 if [ -z "$name" ]; then
     echo "ERROR: missing container name, use -n option"
     echo
     usage
     exit 1
 fi
-
-conffile="/var/lib/lxc/$name.conf"
-rootfs="/var/lib/lxc/$name/rootfs"
 
 case "$command" in
     create)   create;;
