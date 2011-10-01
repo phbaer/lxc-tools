@@ -6,6 +6,7 @@
 #
 # Copyright (C) 2010 Nigel McNie
 # Modified for Ubuntu 2010 phbaer
+# Modified some more 2011 David Schoen
 #
 
 CONFFILE="lxc.conf"
@@ -379,35 +380,32 @@ destroy() {
     return 0
 }
 
-help() {
-    cat <<EOF
-
-This script is a helper to create ubuntu system containers.
-
-The script will create the container configuration file following
-the informations submitted interactively with 'lxc-ubuntu create'
-
-Have fun :)
-
-EOF
-}
-
 usage() {
-    echo "Usage: $(readlink -f $0) {create|destroy} -n NAME"
-    exit 0
+    echo "Usage: $0 <command> <options>"
+    echo
+    echo "Example: $0 create -n ubuntu"
+    echo 
+    echo "This script is a helper to create ubuntu system containers."
+    echo 
+    echo "The script will create the container configuration file following"
+    echo "the informations submitted interactively with 'lxc-ubuntu create'"
+    echo
+    echo "Command:"
+    echo "  create: Create a new lxc"
+    echo "  destroy: Destroy an existing lxc" 
+    echo
+    echo "Options:"
+    echo "  -n|--name <name>: name of lxc"
+    echo "  -h|-help|--help: display this helpful message"
+    echo 
+    echo "Have fun :)"
 }
-
-
 
 # Main program
 
 if [ $# = 0 ]; then
-    usage
+    usage 1
 fi
-
-case "$1" in
-    -h|-help|--help) help;;
-esac
 
 if [ "$(id -u)" != "0" ]; then
     echo "This script should be run as 'root'"
@@ -415,21 +413,39 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 NAME=""
-COMMAND=$1
-shift
-while getopts "n:" flag
-do
-    case $flag in
-        n) NAME="$OPTARG" ;;
+COMMAND=""
+
+# parse cli args
+while true; do
+    [[ -z $1 ]] && break
+
+    case "$1" in
+        -h|-help|--help) 
+            usage
+            exit 0
+            ;;
+        -n|--name)
+            NAME="$2"
+            shift # remove name from remaining arguments
+            ;;
+        create|destroy)
+            COMMAND="$1"
+            ;;
         *)
-            echo "Unknown argument: $flag"
+            echo "ERROR: Unknown argument $0"
+            echo
+            usage
             exit 1
             ;;
     esac
+
+    shift
 done
 
 if [ -z "$NAME" ]; then
-    echo "lxc-ubuntu: missing container name, use -n option"
+    echo "ERROR: missing container name, use -n option"
+    echo
+    usage
     exit 1
 fi
 
@@ -441,3 +457,5 @@ case "$COMMAND" in
     destroy)  destroy;;
     *)        usage;;
 esac
+
+# vim: et sw=4 ts=4
