@@ -10,6 +10,19 @@
 #
 
 ################################################################################
+#                                  change log
+################################################################################
+
+# 2011-08-02 - 2011-08-03
+#   - simplified argument parsing and usage/help messages for future refactoring
+#   - adjusted all variables to not be UPPER case to ensure no risk of ENV variable overlap
+#   - consolidated config variable initialisation
+#   - added defaults so that just running './lxc-ubuntu' is sufficient
+#   - set a default root password to 'lxc'
+#   - add --arch, --mirror, --device and --yes cli args
+#   - broke backwards compatibility a little, run with: './lxc-ubuntu ... --device auto' to preserve old behavior
+
+################################################################################
 #                    ubuntu custom configuration files
 ################################################################################
 
@@ -317,17 +330,13 @@ create() {
 
     mkdir -p $rootfs
 
-    # old code to mount an "expected" device in preparation for putting a lxc in
-    # honestly seems a bit pointless so for now i'm just commenting it out
-    # TODO: refactor device mount management
-    #mount /dev/vg0/lxc-$utsname $rootfs
-    #res=$?
-
-    #if [ "$res" != "0" ]; then
-    #    echo "Failed to mount /dev/vg0/lxc-$utsname"
-    #    lxc-destroy -n $utsname
-    #    exit 1
-    #fi
+    if [[ ! -z $device ]]; then
+        if ! mount "$device" "$rootfs"; then
+            echo "Failed to mount $device"
+            lxc-destroy -n "$utsname"
+            exit 1
+        fi
+    fi
 
     install_ubuntu
     write_ubuntu_hostname
@@ -399,6 +408,7 @@ usage() {
     echo "  --mirror <deb mirror>: defaults to http://archive.ubuntu.com/ubuntu"
     echo "  --arch <i386|amd64>: dpkg arch type"
     echo "  -y|--yes: assume defaults are correct for all questions, do not ask interactive questions"
+    echo "  --device </dev/foo>: specify some device to mount as the rootfs of the lxc, 'auto' will use /dev/vg0/lxc-<name>"
     echo 
     echo "Have fun :)"
 }
@@ -434,6 +444,10 @@ while true; do
             arch="$2"
             shift
             ;;
+        --device)
+            device="$2"
+            shift
+            ;;
         -y|--yes)
             interactive=no
             ;;
@@ -459,7 +473,8 @@ fqdn=$(hostname --fqdn)
 conffile="/var/lib/lxc/$utsname.conf"
 rootfs="/var/lib/lxc/$utsname/rootfs"
 arch="${arch:-$(dpkg --print-architecture)}"
-
+device="${device:-}"
+[[ $device = auto ]] && device="/dev/vg0/lxc-$utsname"
 
 $command
 
