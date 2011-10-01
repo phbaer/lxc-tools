@@ -9,13 +9,13 @@
 # Modified some more 2011 David Schoen
 #
 
-CONFFILE="lxc.conf"
-MNTFILE=
-TMPMNTFILE=
-UTSNAME=
-MTU="1500"
-DEBMIRROR=http://archive.ubuntu.com/ubuntu
-FQDN=$(hostname --fqdn)
+conffile="lxc.conf"
+mntfile=
+tmpmntfile=
+utsname=
+mtu="1500"
+debmirror=http://archive.ubuntu.com/ubuntu
+fqdn=$(hostname --fqdn)
 
 
 ################################################################################
@@ -24,38 +24,38 @@ FQDN=$(hostname --fqdn)
 
 # Disable selinux in the container
 write_ubuntu_selinux() {
-    mkdir -p $ROOTFS/selinux
-    echo 0 > $ROOTFS/selinux/enforce
+    mkdir -p $rootfs/selinux
+    echo 0 > $rootfs/selinux/enforce
 }
 
 # Write out a custom fstab
 write_ubuntu_fstab() {
-cat <<EOF > $ROOTFS/etc/fstab
+cat <<EOF > $rootfs/etc/fstab
 tmpfs  /dev/shm   tmpfs  defaults  0 0
 EOF
 }
 
 # Write out network config (dhcp)
 write_ubuntu_network() {
-cat <<EOF > $ROOTFS/etc/network/interfaces
+cat <<EOF > $rootfs/etc/network/interfaces
 auto lo
 iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
 EOF
-cat <<EOF >> $ROOTFS/etc/dhcp3/dhclient.conf
-send host-name "$UTSNAME";
+cat <<EOF >> $rootfs/etc/dhcp3/dhclient.conf
+send host-name "$utsname";
 EOF
 }
 
 # Set the hostname for the container
 write_ubuntu_hostname() {
-cat <<EOF > $ROOTFS/etc/hostname
-$UTSNAME
+cat <<EOF > $rootfs/etc/hostname
+$utsname
 EOF
-cat <<EOF > $ROOTFS/etc/hosts
-127.0.0.1   $UTSNAME localhost
+cat <<EOF > $rootfs/etc/hosts
+127.0.0.1   $utsname localhost
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback
@@ -69,7 +69,7 @@ EOF
 
 # Writes a custom ssh config that allows root logins
 write_ubuntu_sshd_config() {
-cat <<EOF > $ROOTFS/etc/ssh/sshd_config
+cat <<EOF > $rootfs/etc/ssh/sshd_config
 Port 22
 Protocol 2
 HostKey /etc/ssh/ssh_host_rsa_key
@@ -100,7 +100,7 @@ reconfigure_ubuntu_packages() {
     tzdata_area=$(debconf-show tzdata | grep Areas | cut -f 2 -d :)
     tzdata_zone=$(debconf-show tzdata | grep Zones/${tzdata_area:1} | cut -f 2 -d :)
 
-    cat <<EOF | chroot $ROOTFS sh
+    cat <<EOF | chroot $rootfs sh
 #!/bin/sh
 apt-get install --force-yes -y language-pack-en
 update-locale LANG="en_GB.UTF-8" LANGUAGE="en_GB.UTF-8" LC_ALL="en_GB.UTF-8"
@@ -108,7 +108,7 @@ EOF
 }
 
 disable_upstart_mounts() {
-    cat <<EOF > $ROOTFS/lib/init/fstab
+    cat <<EOF > $rootfs/lib/init/fstab
 #
 # These are the filesystems that are always mounted on boot, you can
 # override any of these by copying the appropriate line from this file into
@@ -134,11 +134,11 @@ EOF
 }
 
 modify_upstart_sysinit() {
-    sed -i 's/start on filesystem and net-device-up IFACE=lo/start on filesystem #and net-device-up IFACE=lo/' $ROOTFS/etc/init/rc-sysinit.conf
+    sed -i 's/start on filesystem and net-device-up IFACE=lo/start on filesystem #and net-device-up IFACE=lo/' $rootfs/etc/init/rc-sysinit.conf
 }
 
 write_upstart_lxc() {
-    cat <<EOF > $ROOTFS/etc/init/lxc.conf
+    cat <<EOF > $rootfs/etc/init/lxc.conf
 # LXC – Fix init sequence to have LXC containers boot with upstart
 
 # description “Fix LXC container - Lucid”
@@ -169,16 +169,16 @@ initctl emit virtual-filesystems --no-wait
 init 2
 end script
 EOF
-mkdir -p $ROOTFS/var/run/network
-touch $ROOTFS/var/run/network/ifstate
-mkdir -p $ROOTFS/var/run/sshd
+mkdir -p $rootfs/var/run/network
+touch $rootfs/var/run/network/ifstate
+mkdir -p $rootfs/var/run/sshd
 }
 
 # Disables services a container doesn't need
 disable_ubuntu_services() {
-    chroot $ROOTFS /usr/sbin/update-rc.d -f umountfs remove
-    chroot $ROOTFS /usr/sbin/update-rc.d -f hwclock.sh remove
-    chroot $ROOTFS /usr/sbin/update-rc.d -f hwclockfirst.sh remove
+    chroot $rootfs /usr/sbin/update-rc.d -f umountfs remove
+    chroot $rootfs /usr/sbin/update-rc.d -f hwclock.sh remove
+    chroot $rootfs /usr/sbin/update-rc.d -f hwclockfirst.sh remove
 }
 
 
@@ -187,17 +187,17 @@ disable_ubuntu_services() {
 ################################################################################
 
 write_lxc_configuration() {
-cat <<EOF > $CONFFILE
-lxc.utsname = $UTSNAME
+cat <<EOF > $conffile
+lxc.utsname = $utsname
 lxc.tty = 6
 lxc.pts = 1024
 lxc.network.type = veth
 lxc.network.flags = up
 lxc.network.link = br0
 lxc.network.name = eth0
-lxc.network.mtu = $MTU
-lxc.rootfs = $ROOTFS
-#lxc.mount = $TMPMNTFILE
+lxc.network.mtu = $mtu
+lxc.rootfs = $rootfs
+#lxc.mount = $tmpmntfile
 lxc.cgroup.devices.deny = a
 # /dev/null and zero
 lxc.cgroup.devices.allow = c 1:3 rwm
@@ -219,10 +219,10 @@ EOF
 
 write_lxc_mounts() {
 
-    TMPMNTFILE=$(mktemp lxc.XXXXXXXXXX)
+    tmpmntfile=$(mktemp lxc.XXXXXXXXXX)
 
-    if [ ! -z "$MNTFILE" ]; then
-    cp $MNTFILE $TMPMNTFILE
+    if [ ! -z "$mntfile" ]; then
+    cp $mntfile $tmpmntfile
     fi
 }
 
@@ -230,56 +230,56 @@ write_lxc_mounts() {
 collect_information() {
 
     # choose a hostname, default is the container name
-    echo -n "What hostname do you wish for this container ? [$NAME] "
-    read _UTSNAME_
+    echo -n "What hostname do you wish for this container ? [$name] "
+    read _utsname_
 
-    if [ ! -z "$_UTSNAME_" ]; then
-        UTSNAME=$_UTSNAME_
+    if [ ! -z "$_utsname_" ]; then
+        utsname=$_utsname_
     else
-        UTSNAME=$NAME
+        utsname=$name
     fi
 
     echo -n "Specify the location for an extra fstab file [(none)] "
-    read _MNTFILE_
+    read _mntfile_
 
-    if [ ! -z "$_MNTFILE_" ]; then
-        MNTFILE=$_MNTFILE_
+    if [ ! -z "$_mntfile_" ]; then
+        mntfile=$_mntfile_
     fi
 }
 
 install_ubuntu()
 {
-    ARCH=$(dpkg --print-architecture)
-    case $ARCH in
-        amd64) ARCH=amd64 ;;
-        i386 ) ARCH=i386 ;;
-        *    ) echo "Unsupported architecture $ARCH!"; exit 1; ;;
+    arch=$(dpkg --print-architecture)
+    case $arch in
+        amd64) arch=amd64 ;;
+        i386 ) arch=i386 ;;
+        *    ) echo "Unsupported architecture $arch!"; exit 1; ;;
     esac
 
     echo "Choose the architecture for the container (choices as for deboostrap, e.g.: amd64, i386"
-    echo -n "Choice ? [$ARCH] "
-    read _ARCH_
+    echo -n "Choice ? [$arch] "
+    read _arch_
 
-    if [ ! -z "$_ARCH_" ]; then
-        ARCH=$_ARCH_
+    if [ ! -z "$_arch_" ]; then
+        arch=$_arch_
     fi
 
     # choose a mirror
-    echo -n "Specify the ubuntu mirror to use to download the rootfs [$DEBMIRROR] "
-    read _DEBMIRROR_
+    echo -n "Specify the ubuntu mirror to use to download the rootfs [$debmirror] "
+    read _debmirror_
 
-    if [ ! -z "$_DEBMIRROR_" ]; then
-        DEBMIRROR=$_DEBMIRROR_
+    if [ ! -z "$_debmirror_" ]; then
+        debmirror=$_debmirror_
     fi
 
     # download a mini ubuntu into a cache
     echo "Downloading ubuntu minimal ..."
-    debootstrap --verbose --variant=minbase --arch=$ARCH \
+    debootstrap --verbose --variant=minbase --arch=$arch \
         --include ifupdown,locales,netbase,net-tools,iproute,openssh-server,dhcp3-client,gpgv,adduser,apt-utils,vim,openssh-blacklist,openssh-blacklist-extra,console-setup,sudo,iputils-ping,aptitude,ubuntu-minimal \
-        lucid $ROOTFS $DEBMIRROR
+        lucid $rootfs $debmirror
 
-    RESULT=$?
-    if [ "$RESULT" != "0" ]; then
+    resULT=$?
+    if [ "$resULT" != "0" ]; then
         echo "Failed to download the rootfs, aborting."
         exit 1
     fi
@@ -288,7 +288,7 @@ install_ubuntu()
 
 run_pre_create_hook() {
     # source a hook that's run before the container is created
-    # sourced so it has access to our variables, like $NAME
+    # sourced so it has access to our variables, like $name
     test -x /etc/lxc-ubuntu/host-pre-create && . /etc/lxc-ubuntu/host-pre-create
 }
 
@@ -297,9 +297,9 @@ run_post_create_hooks() {
     test -x /etc/lxc-ubuntu/host-post-create && . /etc/lxc-ubuntu/host-post-create
 
     if [ -x /etc/lxc-ubuntu/guest-post-create ]; then
-        cp /etc/lxc-ubuntu/guest-post-create $ROOTFS/guest-post-create
-        chroot $ROOTFS /bin/bash /guest-post-create
-        chroot $ROOTFS /bin/rm /guest-post-create
+        cp /etc/lxc-ubuntu/guest-post-create $rootfs/guest-post-create
+        chroot $rootfs /bin/bash /guest-post-create
+        chroot $rootfs /bin/rm /guest-post-create
     fi
 }
 
@@ -309,25 +309,25 @@ create() {
     write_lxc_mounts
     write_lxc_configuration
 
-    /usr/bin/lxc-create -n $NAME -f $CONFFILE
-    RES=$?
+    /usr/bin/lxc-create -n $name -f $conffile
+    res=$?
 
     # remove the configuration files
-    rm -f $CONFFILE
-    rm -f $TMPMNTFILE
+    rm -f $conffile
+    rm -f $tmpmntfile
 
-    if [ "$RES" != "0" ]; then
-        echo "Failed to create '$NAME'"
+    if [ "$res" != "0" ]; then
+        echo "Failed to create '$name'"
         exit 1
     fi
 
-    mkdir -p $ROOTFS
-    mount /dev/vg0/lxc-$NAME $ROOTFS
-    RES=$?
+    mkdir -p $rootfs
+    mount /dev/vg0/lxc-$name $rootfs
+    res=$?
 
-    if [ "$RES" != "0" ]; then
-        echo "Failed to mount /dev/vg0/lxc-$NAME"
-        lxc-destroy -n $NAME
+    if [ "$res" != "0" ]; then
+        echo "Failed to mount /dev/vg0/lxc-$name"
+        lxc-destroy -n $name
         exit 1
     fi
 
@@ -347,33 +347,33 @@ create() {
  
 
     echo "Done."
-    echo -e "\nYou can run your container with the 'lxc-start -n $NAME'\n"
+    echo -e "\nYou can run your container with the 'lxc-start -n $name'\n"
 }
 
 destroy() {
 
-    echo -n "This will PERMANENTLY DESTROY the container $NAME. Are you sure? [y/N] ? "
+    echo -n "This will PERMANENTLY DESTROY the container $name. Are you sure? [y/N] ? "
     read
-    if [ "$REPLY" != "y" ]; then
+    if [ "$reply" != "y" ]; then
         echo "Abort."
         exit
     fi
 
     halt=$(which lxc-halt)
-    if lxc-info -n $NAME | grep RUNNING > /dev/null; then
+    if lxc-info -n $name | grep RUNNING > /dev/null; then
         if [ -n "$halt" ]; then
-            lxc-halt -n $NAME
+            lxc-halt -n $name
         else
-            lxc-stop -n $NAME
+            lxc-stop -n $name
         fi
     fi
     sleep .5
 
-    rm -rf $ROOTFS
-    /usr/bin/lxc-destroy -n $NAME
+    rm -rf $rootfs
+    /usr/bin/lxc-destroy -n $name
     RETVAL=$?
     if [ ! $RETVAL -eq 0 ]; then
-        echo "Failed to destroyed '$NAME'"
+        echo "Failed to destroyed '$name'"
         return $RETVAL
     fi
 
@@ -412,8 +412,8 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-NAME=""
-COMMAND=""
+name=""
+command=""
 
 # parse cli args
 while true; do
@@ -425,11 +425,11 @@ while true; do
             exit 0
             ;;
         -n|--name)
-            NAME="$2"
+            name="$2"
             shift # remove name from remaining arguments
             ;;
         create|destroy)
-            COMMAND="$1"
+            command="$1"
             ;;
         *)
             echo "ERROR: Unknown argument $0"
@@ -442,17 +442,17 @@ while true; do
     shift
 done
 
-if [ -z "$NAME" ]; then
+if [ -z "$name" ]; then
     echo "ERROR: missing container name, use -n option"
     echo
     usage
     exit 1
 fi
 
-CONFFILE="/var/lib/lxc/$NAME.conf"
-ROOTFS="/var/lib/lxc/$NAME/rootfs"
+conffile="/var/lib/lxc/$name.conf"
+rootfs="/var/lib/lxc/$name/rootfs"
 
-case "$COMMAND" in
+case "$command" in
     create)   create;;
     destroy)  destroy;;
     *)        usage;;
