@@ -220,14 +220,14 @@ write_lxc_mounts() {
 
 collect_information() {
 
+    [[ $interactive = yes ]] || return
+
     # choose a hostname, default is the container name
-    echo -n "What hostname do you wish for this container ? [$name] "
+    echo -n "What hostname do you wish for this container ? [$utsname] "
     read _utsname_
 
     if [ ! -z "$_utsname_" ]; then
         utsname=$_utsname_
-    else
-        utsname=$name
     fi
 
     echo -n "Specify the location for an extra fstab file [(none)] "
@@ -236,16 +236,6 @@ collect_information() {
     if [ ! -z "$_mntfile_" ]; then
         mntfile=$_mntfile_
     fi
-}
-
-install_ubuntu()
-{
-    arch=$(dpkg --print-architecture)
-    case $arch in
-        amd64) arch=amd64 ;;
-        i386 ) arch=i386 ;;
-        *    ) echo "Unsupported architecture $arch!"; exit 1; ;;
-    esac
 
     echo "Choose the architecture for the container (choices as for deboostrap, e.g.: amd64, i386"
     echo -n "Choice ? [$arch] "
@@ -262,6 +252,14 @@ install_ubuntu()
     if [ ! -z "$_debmirror_" ]; then
         debmirror=$_debmirror_
     fi
+}
+
+install_ubuntu()
+{
+    case $arch in
+        amd64|i386) ;;
+        *) echo "Unsupported architecture $arch!"; exit 1;;
+    esac
 
     # download a mini ubuntu into a cache
     echo "Downloading ubuntu minimal ..."
@@ -279,7 +277,7 @@ install_ubuntu()
 
 run_pre_create_hook() {
     # source a hook that's run before the container is created
-    # sourced so it has access to our variables, like $name
+    # sourced so it has access to our variables, like $utsname
     test -x /etc/lxc-ubuntu/host-pre-create && . /etc/lxc-ubuntu/host-pre-create
 }
 
@@ -300,7 +298,7 @@ create() {
     write_lxc_mounts
     write_lxc_configuration
 
-    /usr/bin/lxc-create -n $name -f $conffile
+    /usr/bin/lxc-create -n $utsname -f $conffile
     res=$?
 
     # remove the configuration files
@@ -308,17 +306,17 @@ create() {
     rm -f $tmpmntfile
 
     if [ "$res" != "0" ]; then
-        echo "Failed to create '$name'"
+        echo "Failed to create '$utsname'"
         exit 1
     fi
 
     mkdir -p $rootfs
-    mount /dev/vg0/lxc-$name $rootfs
+    mount /dev/vg0/lxc-$utsname $rootfs
     res=$?
 
     if [ "$res" != "0" ]; then
-        echo "Failed to mount /dev/vg0/lxc-$name"
-        lxc-destroy -n $name
+        echo "Failed to mount /dev/vg0/lxc-$utsname"
+        lxc-destroy -n $utsname
         exit 1
     fi
 
@@ -338,12 +336,12 @@ create() {
  
 
     echo "Done."
-    echo -e "\nYou can run your container with the 'lxc-start -n $name'\n"
+    echo -e "\nYou can run your container with the 'lxc-start -n $utsname'\n"
 }
 
 destroy() {
 
-    echo -n "This will PERMANENTLY DESTROY the container $name. Are you sure? [y/N] ? "
+    echo -n "This will PERMANENTLY DESTROY the container $utsname. Are you sure? [y/N] ? "
     read
     if [ "$reply" != "y" ]; then
         echo "Abort."
@@ -351,20 +349,20 @@ destroy() {
     fi
 
     halt=$(which lxc-halt)
-    if lxc-info -n $name | grep RUNNING > /dev/null; then
+    if lxc-info -n $utsname | grep RUNNING > /dev/null; then
         if [ -n "$halt" ]; then
-            lxc-halt -n $name
+            lxc-halt -n $utsname
         else
-            lxc-stop -n $name
+            lxc-stop -n $utsname
         fi
     fi
     sleep .5
 
     rm -rf $rootfs
-    /usr/bin/lxc-destroy -n $name
+    /usr/bin/lxc-destroy -n $utsname
     RETVAL=$?
     if [ ! $RETVAL -eq 0 ]; then
-        echo "Failed to destroy '$name'"
+        echo "Failed to destroy '$utsname'"
         return $RETVAL
     fi
 
@@ -372,7 +370,7 @@ destroy() {
 }
 
 usage() {
-    echo "Usage: $0 <command> <options>"
+    echo "Usage: $0 [command] [options]"
     echo
     echo "Example: $0 create -n ubuntu"
     echo 
@@ -382,28 +380,25 @@ usage() {
     echo "the information submitted interactively with 'lxc-ubuntu create'"
     echo "or as options outlined below."
     echo
-    echo "Command:"
+    echo "Command: default is 'create'"
     echo "  create: Create a new lxc"
     echo "  destroy: Destroy an existing lxc" 
     echo
     echo "Options:"
-    echo "  -n|--name <name>: name of lxc"
+    echo "  -n|--name <name>: name of lxc, default is 'ubuntu'"
     echo "  -h|-help|--help: display this helpful message"
+    echo "  --mirror <deb mirror>: defaults to http://archive.ubuntu.com/ubuntu"
+    echo "  -y|--yes: assume defaults are correct for all questions, do not ask interactive questions"
     echo 
     echo "Have fun :)"
 }
 
 # Main program
 
-if [ $# = 0 ]; then
-    usage 1
-fi
-
 if [ "$(id -u)" != "0" ]; then
     echo "This script should be run as 'root'"
     exit 1
 fi
-
 
 # parse cli args
 while true; do
@@ -415,14 +410,21 @@ while true; do
             exit 0
             ;;
         -n|--name)
-            name="$2"
+            utsname="$2"
             shift # remove name from remaining arguments
             ;;
         create|destroy)
             command="$1"
             ;;
+        --mirror)
+            debmirror="$2"
+            shift
+            ;;
+        -y|--yes)
+            interactive=no
+            ;;
         *)
-            echo "ERROR: Unknown argument $0"
+            echo "ERROR: Unknown argument $1"
             echo
             usage
             exit 1
@@ -432,29 +434,19 @@ while true; do
     shift
 done
 
-name="${name:-}"
-command="${command:-}"
+utsname="${utsname:-ubuntu}" # default lxc name of "ubuntu"
+command="${command:-create}" # default command is to "create"
+interactive="${interactive:-yes}"
 mntfile=
 tmpmntfile=
-utsname=
 mtu="1500"
-debmirror=http://archive.ubuntu.com/ubuntu
+debmirror="${debmirror:-http://archive.ubuntu.com/ubuntu}"
 fqdn=$(hostname --fqdn)
-conffile="/var/lib/lxc/$name.conf"
-rootfs="/var/lib/lxc/$name/rootfs"
+conffile="/var/lib/lxc/$utsname.conf"
+rootfs="/var/lib/lxc/$utsname/rootfs"
+arch=$(dpkg --print-architecture)
 
-# Check arguments
-if [ -z "$name" ]; then
-    echo "ERROR: missing container name, use -n option"
-    echo
-    usage
-    exit 1
-fi
 
-case "$command" in
-    create)   create;;
-    destroy)  destroy;;
-    *)        usage;;
-esac
+$command
 
 # vim: et sw=4 ts=4
