@@ -397,6 +397,7 @@ usage() {
     echo "  -n|--name <name>: name of lxc, default is 'ubuntu'"
     echo "  -h|-help|--help: display this helpful message"
     echo "  --mirror <deb mirror>: defaults to http://archive.ubuntu.com/ubuntu"
+    echo "  --arch <i386|amd64>: dpkg arch type"
     echo "  -y|--yes: assume defaults are correct for all questions, do not ask interactive questions"
     echo 
     echo "Have fun :)"
@@ -429,6 +430,10 @@ while true; do
             debmirror="$2"
             shift
             ;;
+        --arch)
+            arch="$2"
+            shift
+            ;;
         -y|--yes)
             interactive=no
             ;;
@@ -453,7 +458,7 @@ debmirror="${debmirror:-http://archive.ubuntu.com/ubuntu}"
 fqdn=$(hostname --fqdn)
 conffile="/var/lib/lxc/$utsname.conf"
 rootfs="/var/lib/lxc/$utsname/rootfs"
-arch=$(dpkg --print-architecture)
+arch="${arch:-$(dpkg --print-architecture)}"
 
 
 $command
