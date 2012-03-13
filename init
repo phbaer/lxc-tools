@@ -24,9 +24,19 @@ SCRIPTNAME=/etc/init.d/$NAME
 . /lib/init/vars.sh
 . /lib/lsb/init-functions
 
+# Get all container names in order.
+# (Seeing /var/lib/lxc/$C/priority)
+get_containers() {
+    for i in $(ls -1 /var/lib/lxc); do
+        n="$(cat /var/lib/lxc/$i/priority 2>/dev/null)"
+        (echo "$n" | grep '^[0-9]\+$' >/dev/null) || n=10
+        echo "$n/$i"
+    done | sort -n | sed 's:^[0-9]\+/::'
+}
+
 do_start()
 {
-    for C in $(ls -1 /var/lib/lxc); do
+    for C in $(get_containers); do
         if [ -r /var/lib/lxc/$C/autostart ]; then
             if [ "$(cat /var/lib/lxc/$C/autostart)" = "1" ]; then
                 log_progress_msg "$C"
@@ -49,7 +59,7 @@ do_start()
 do_stop()
 {
     halt=$(which lxc-halt)
-    for C in $(ls -1 /var/lib/lxc); do
+    for C in $(get_containers | /usr/bin/tac); do
         if [ -f /var/lib/lxc/$C/state ]; then
             log_progress_msg "$C"
             if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
