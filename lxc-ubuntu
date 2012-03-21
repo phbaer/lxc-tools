@@ -209,6 +209,29 @@ cat <<EOF > $conffile
 lxc.utsname = $utsname
 lxc.tty = 6
 lxc.pts = 1024
+
+###########################################################################
+# Dropping capabilities (from https://github.com/dereks/lxc-ubuntu-x)
+###########################################################################
+# 
+# Capabilities 
+# 
+#     You don't need to drop capabilities.  But for security, you probably
+#     want to drop as many capabilities as you can. (See "man capabilities".)
+# 
+# - WARNING: Any read-only mount in $HOST.fstab can be remounted as 
+#   read-write unless sys_admin is dropped.  You have been warned.
+# 
+# - The hostname command needs sys_admin.  So if you drop sys_admin here, 
+#   you'll see this harmless warning at lxc-start:
+#        init: hostname main process (4) terminated with status 1
+# 
+# - iptables / ufw (and ping?) needs net_raw, so it is not dropped.
+# - OpenSSH needs sys_resource, so it is not dropped.
+#
+lxc.cap.drop=sys_admin audit_control audit_write fsetid ipc_lock ipc_owner lease linux_immutable mac_admin mac_override mknod setfcap setpcap sys_boot sys_module sys_nice sys_pacct sys_ptrace sys_rawio sys_tty_config sys_time
+###########################################################################
+
 lxc.network.type = veth
 lxc.network.flags = up
 lxc.network.link = br0
