@@ -368,6 +368,11 @@ create() {
 
     echo "Done."
     echo -e "\nYou can run your container with the 'lxc-start -n $utsname'\n"
+    if [ -z "$root_authkey" ] ; then
+      echo -e "\nYou can login to your container over SSH as root with password 'lxc'\n"
+    else
+      echo -e "\nYou can login to your container over SSH as root with the authkey you have provided\n"
+    fi
 }
 
 destroy() {
@@ -421,7 +426,7 @@ usage() {
     echo "  --mirror <deb mirror>: defaults to http://archive.ubuntu.com/ubuntu"
     echo "  --arch <i386|amd64>: dpkg arch type"
     echo "  --release <hardy|intrepid|jaunty|karmic|lucid|oneiric> : debian release"
-    echo "  --root-authkey <file>: use publickey-based authentication for root, no password"
+    echo "  --root-authkey <file>: use publickey-based authentication for root, no password authetication for root"
     echo "  -y|--yes: assume defaults are correct for all questions, do not ask interactive questions"
     echo "  --device </dev/foo>: specify some device to mount as the rootfs of the lxc, 'auto' will use /dev/vg0/lxc-<name>"
     echo 
