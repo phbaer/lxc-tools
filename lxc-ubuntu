@@ -360,7 +360,7 @@ create() {
 destroy() {
 
     echo -n "This will PERMANENTLY DESTROY the container $utsname. Are you sure? [y/N] ? "
-    read
+    read reply
     if [ "$reply" != "y" ]; then
         echo "Abort."
         exit
