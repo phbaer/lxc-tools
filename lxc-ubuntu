@@ -48,7 +48,7 @@ iface lo inet loopback
 auto eth0
 iface eth0 inet dhcp
 EOF
-cat <<EOF >> $rootfs/etc/dhcp3/dhclient.conf
+cat <<EOF >> $rootfs/etc/dhcp/dhclient.conf
 send host-name "$utsname";
 EOF
 }
@@ -150,7 +150,7 @@ write_upstart_lxc() {
     cat <<EOF > $rootfs/etc/init/lxc.conf
 # LXC – Fix init sequence to have LXC containers boot with upstart
 
-# description “Fix LXC container - Lucid”
+# description “Fix LXC container”
 
 start on startup
 
@@ -282,8 +282,8 @@ install_ubuntu()
     # download a mini ubuntu into a cache
     echo "Downloading ubuntu minimal ..."
     debootstrap --verbose --variant=minbase --arch=$arch \
-        --include ifupdown,locales,netbase,net-tools,iproute,openssh-server,dhcp3-client,gpgv,adduser,apt-utils,vim,openssh-blacklist,openssh-blacklist-extra,console-setup,sudo,iputils-ping,aptitude,ubuntu-minimal \
-        lucid $rootfs $debmirror
+        --include ifupdown,locales,netbase,net-tools,iproute,openssh-server,isc-dhcp-client,gpgv,adduser,apt-utils,vim,openssh-blacklist,openssh-blacklist-extra,console-setup,sudo,iputils-ping,aptitude,ubuntu-minimal \
+        $release $rootfs $debmirror
 
     resULT=$?
     if [ "$resULT" != "0" ]; then
@@ -360,7 +360,7 @@ create() {
 destroy() {
 
     echo -n "This will PERMANENTLY DESTROY the container $utsname. Are you sure? [y/N] ? "
-    read
+    read reply
     if [ "$reply" != "y" ]; then
         echo "Abort."
         exit
@@ -407,6 +407,7 @@ usage() {
     echo "  -h|-help|--help: display this helpful message"
     echo "  --mirror <deb mirror>: defaults to http://archive.ubuntu.com/ubuntu"
     echo "  --arch <i386|amd64>: dpkg arch type"
+    echo "  --release <hardy|intrepid|jaunty|karmic|lucid|oneiric> : debian release"
     echo "  -y|--yes: assume defaults are correct for all questions, do not ask interactive questions"
     echo "  --device </dev/foo>: specify some device to mount as the rootfs of the lxc, 'auto' will use /dev/vg0/lxc-<name>"
     echo 
@@ -438,6 +439,10 @@ while true; do
             ;;
         --mirror)
             debmirror="$2"
+            shift
+            ;;
+	--release)
+	    release="$2"
             shift
             ;;
         --arch)
@@ -473,6 +478,7 @@ fqdn=$(hostname --fqdn)
 conffile="/var/lib/lxc/$utsname.conf"
 rootfs="/var/lib/lxc/$utsname/rootfs"
 arch="${arch:-$(dpkg --print-architecture)}"
+release="${release:-$(lsb_release -s -c)}"
 device="${device:-}"
 [[ $device = auto ]] && device="/dev/vg0/lxc-$utsname"
 
