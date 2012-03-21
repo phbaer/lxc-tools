@@ -116,6 +116,15 @@ reset_root_password() {
     sed -i 's%^root:.*%root:$6$EEGUnn6e$DkpHEGpLyyFW/QePxZjsTvix9E7c8YPdH6RF4BYx8yagQMySPYkmjKMPLyrE7ZpNxUh0huqMCfSLcIct7/puH/:15248:0:99999:7:::%' $rootfs/etc/shadow
 }
 
+# create root's SSH authorized_keys file
+write_root_authkey() {
+   mkdir -p $rootfs/root/.ssh
+   local f=$rootfs/root/.ssh/authorized_keys
+   cp "$1" "$f"
+   chmod 644 "$f"
+   chown root:root "$f"
+}
+
 disable_upstart_mounts() {
     cat <<EOF > $rootfs/lib/init/fstab
 #
@@ -342,7 +351,6 @@ create() {
     write_ubuntu_hostname
     write_ubuntu_fstab
     write_ubuntu_network
-    write_ubuntu_sshd_config
     write_ubuntu_selinux
     reconfigure_ubuntu_packages
     disable_ubuntu_services
@@ -351,7 +359,12 @@ create() {
     disable_upstart_mounts
     modify_upstart_sysinit
     write_upstart_lxc
-    reset_root_password
+    if [ -z "$root_authkey" ] ; then
+	write_ubuntu_sshd_config
+    	reset_root_password
+    else
+	write_root_authkey "$root_authkey"
+    fi
 
     echo "Done."
     echo -e "\nYou can run your container with the 'lxc-start -n $utsname'\n"
@@ -408,6 +421,7 @@ usage() {
     echo "  --mirror <deb mirror>: defaults to http://archive.ubuntu.com/ubuntu"
     echo "  --arch <i386|amd64>: dpkg arch type"
     echo "  --release <hardy|intrepid|jaunty|karmic|lucid|oneiric> : debian release"
+    echo "  --root-authkey <file>: use publickey-based authentication for root, no password"
     echo "  -y|--yes: assume defaults are correct for all questions, do not ask interactive questions"
     echo "  --device </dev/foo>: specify some device to mount as the rootfs of the lxc, 'auto' will use /dev/vg0/lxc-<name>"
     echo 
@@ -453,6 +467,10 @@ while true; do
             device="$2"
             shift
             ;;
+	--root-authkey)
+	    root_authkey="$2"
+	    shift
+	    ;;
         -y|--yes)
             interactive=no
             ;;
