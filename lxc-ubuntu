@@ -41,16 +41,37 @@ EOF
 
 # Write out network config (dhcp)
 write_ubuntu_network() {
-cat <<EOF > $rootfs/etc/network/interfaces
+    cat <<EOF > $rootfs/etc/network/interfaces
 auto lo
 iface lo inet loopback
 
+EOF
+    if [ -z "$static_ip4" ] ; then
+	## no static address set: enable DHCP
+	cat <<EOF > $rootfs/etc/network/interfaces
 auto eth0
 iface eth0 inet dhcp
 EOF
 cat <<EOF >> $rootfs/etc/dhcp/dhclient.conf
 send host-name "$utsname";
 EOF
+    else
+	## fixed address
+	cat <<EOF >> $rootfs/etc/network/interfaces
+auto eth0
+iface eth0 inet static
+	address $address
+	netmask $netmask
+	gateway $gateway
+
+EOF
+	## resolver config
+	if [ -n "$nameserver" ] ; then
+		cat <<EOF >> $rootfs/etc/resolv.conf
+nameserver $nameserver
+EOF
+	fi
+    fi
 }
 
 # Set the hostname for the container
@@ -209,32 +230,9 @@ cat <<EOF > $conffile
 lxc.utsname = $utsname
 lxc.tty = 6
 lxc.pts = 1024
-
-###########################################################################
-# Dropping capabilities (from https://github.com/dereks/lxc-ubuntu-x)
-###########################################################################
-# 
-# Capabilities 
-# 
-#     You don't need to drop capabilities.  But for security, you probably
-#     want to drop as many capabilities as you can. (See "man capabilities".)
-# 
-# - WARNING: Any read-only mount in $HOST.fstab can be remounted as 
-#   read-write unless sys_admin is dropped.  You have been warned.
-# 
-# - The hostname command needs sys_admin.  So if you drop sys_admin here, 
-#   you'll see this harmless warning at lxc-start:
-#        init: hostname main process (4) terminated with status 1
-# 
-# - iptables / ufw (and ping?) needs net_raw, so it is not dropped.
-# - OpenSSH needs sys_resource, so it is not dropped.
-#
-lxc.cap.drop=sys_admin audit_control audit_write fsetid ipc_lock ipc_owner lease linux_immutable mac_admin mac_override mknod setfcap setpcap sys_boot sys_module sys_nice sys_pacct sys_ptrace sys_rawio sys_tty_config sys_time
-###########################################################################
-
 lxc.network.type = veth
 lxc.network.flags = up
-lxc.network.link = br0
+lxc.network.link = $bridge
 lxc.network.name = eth0
 lxc.network.mtu = $mtu
 lxc.rootfs = $rootfs
@@ -452,6 +450,8 @@ usage() {
     echo "  --root-authkey <file>: use publickey-based authentication for root, no password authetication for root"
     echo "  -y|--yes: assume defaults are correct for all questions, do not ask interactive questions"
     echo "  --device </dev/foo>: specify some device to mount as the rootfs of the lxc, 'auto' will use /dev/vg0/lxc-<name>"
+    echo " --bridge IFNAME"
+    echo " --static-ip4 IPADDR NETMASK GATEWAY DNSSERVER"
     echo 
     echo "Have fun :)"
 }
@@ -462,6 +462,9 @@ if [ "$(id -u)" != "0" ]; then
     echo "This script should be run as 'root'"
     exit 1
 fi
+
+bridge=br0
+static_ip4=""
 
 # parse cli args
 while true; do
@@ -498,6 +501,22 @@ while true; do
 	--root-authkey)
 	    root_authkey="$2"
 	    shift
+	    ;;
+	--bridge)
+	    bridge="$2"
+	    shift
+	    ;;
+	--static-ip4)
+	    if [ $# -lt 5 ] ; then usage; exit; fi
+	    address="$2"
+	    shift
+	    netmask="$2"
+	    shift
+	    gateway="$2"
+	    shift
+	    nameserver="$2"
+	    shift
+	    static_ip4=yes
 	    ;;
         -y|--yes)
             interactive=no
