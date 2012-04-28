@@ -60,16 +60,14 @@ do_stop()
 {
     halt=$(which lxc-halt)
     for C in $(get_containers | /usr/bin/tac); do
-        if [ -f /var/lib/lxc/$C/state ]; then
-            log_progress_msg "$C"
-            if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
-                if [ -n "$halt" ]; then
-                    $halt -n $C &
-                else
-                    /usr/bin/lxc-stop -n $C
-                    if [ $? -gt 0 ]; then
-                        return 2
-                    fi
+        log_progress_msg "$C"
+        if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
+            if [ -n "$halt" ]; then
+                $halt -n $C &
+            else
+                /usr/bin/lxc-stop -n $C
+                if [ $? -gt 0 ]; then
+                    return 2
                 fi
             fi
         fi
@@ -80,7 +78,10 @@ do_stop()
         starttime=$(date "+%s")
         while true
         do
-            if cat /var/lib/lxc/*/state | grep -vE "RUNNING|STOPPING" > /dev/null ; then
+            for C in $(get_containers); do
+                lxc-info -n $C
+            done | grep -vE "RUNNING|STOPPING" >/dev/null
+            if [ $? -eq 0 ]; then
                 return 0
             fi
             sleep .25
