@@ -96,6 +96,12 @@ do_stop()
     fi
 }
 
+# Check if cgroup is already mounted to avoid that lxc-wait hangs up at 'do_start'.
+if ! grep -w 'cgroup' /etc/mtab > /dev/null; then
+    echo 'error: you must first mount cgroup filesystem' >&2
+    exit 1
+fi
+
 case "$1" in
   start)
 	log_daemon_msg "Starting $DESC" #"$NAME"
