@@ -131,8 +131,12 @@ case "$1" in
 		;;
 	esac
 	;;
+  status)
+	for C in $(get_containers); do
+		lxc-info -n $C
+	done
+	;;
   *)
-	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
 	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
 	exit 3
 	;;
