@@ -26,10 +26,12 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-while getopts "n:" flag
+while getopts "n:c:t:" flag
 do
     case $flag in
         n) CONTAINER="$OPTARG" ;;
+        c) SHUTDOWN_CMD="$OPTARG" ;;
+        t) TIMEOUT="$OPTARG" ;;
         *) echo "Unknown flag: $flag"; exit 1; ;;
     esac
 done
