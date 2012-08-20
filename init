@@ -17,9 +17,13 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="linux containers"
 NAME=lxc
 SCRIPTNAME=/etc/init.d/$NAME
+LXC_HALT_ARGS=
 
 # Exit if the package is not installed
 [ -x /usr/bin/lxc-start ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/lxc ] && . /etc/default/lxc
 
 . /lib/init/vars.sh
 . /lib/lsb/init-functions
@@ -63,7 +67,7 @@ do_stop()
         log_progress_msg "$C"
         if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then
             if [ -n "$halt" ]; then
-                $halt -n $C &
+                $halt -n $C $LXC_HALT_ARGS &
             else
                 /usr/bin/lxc-stop -n $C
                 if [ $? -gt 0 ]; then
