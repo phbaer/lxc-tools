@@ -21,6 +21,9 @@ SCRIPTNAME=/etc/init.d/$NAME
 # Exit if the package is not installed
 [ -x /usr/bin/lxc-start ] || exit 0
 
+# Read configuration variable file if it is present
+[ -r /etc/default/lxc ] && . /etc/default/lxc
+
 . /lib/init/vars.sh
 . /lib/lsb/init-functions
 
