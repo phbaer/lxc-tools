@@ -53,7 +53,7 @@ if [ "$(cat /var/lib/lxc/$CONTAINER/state)" = "RUNNING" ]; then
     while true
     do
         count=$(lxc-ps --lxc -n $CONTAINER ax | grep "^$CONTAINER " | wc -l)
-        if [ $count = 1 ]; then
+        if [ $count -le 1 ]; then
             lxc-stop -n $CONTAINER
             exit 0
         fi
