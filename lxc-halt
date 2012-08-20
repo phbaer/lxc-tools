@@ -62,7 +62,7 @@ if [ "$(cat /var/lib/lxc/$CONTAINER/state)" = "RUNNING" ]; then
         curtime=$(date "+%s")
 
         if [ $(( $curtime - $starttime )) -gt $TIMEOUT ]; then
-            echo "Container has been stopping for longer than $TIMEOUT seconds, forcing shutdown" >&2
+            echo "Container $CONTAINER has been stopping for longer than $TIMEOUT seconds, forcing shutdown" >&2
             lxc-stop -n $CONTAINER
             exit 0
         fi
