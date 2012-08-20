@@ -39,12 +39,12 @@ if [ -z "$CONTAINER" ]; then
     exit 1
 fi
 
-if [ ! -f /var/lib/lxc/$CONTAINER/state ]; then
+if [ ! -d /var/lib/lxc/$CONTAINER ]; then
     echo "lxc-halt: container $CONTAINER does not exist"
     exit 1
 fi
 
-if [ "$(cat /var/lib/lxc/$CONTAINER/state)" = "RUNNING" ]; then
+if [[ `lxc-info -n $CONTAINER | grep RUNNING` ]]; then
 
     cmd="${SHUTDOWN_CMD//\[container\]/$CONTAINER}"
     ( $cmd )
@@ -70,3 +70,4 @@ if [ "$(cat /var/lib/lxc/$CONTAINER/state)" = "RUNNING" ]; then
 else
     echo "Container $CONTAINER is already stopped" >&2
 fi
+
