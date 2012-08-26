@@ -17,7 +17,6 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 for CONTAINER in $(ls -1 $lxcpath); do
-    if [ -r $lxcpath/$CONTAINER/state ]; then
-        lxc-info -n $CONTAINER
-    fi
+    lxc-info -n $CONTAINER
 done
+
