@@ -79,25 +79,17 @@ do_stop()
 
     if [ -n "$halt" ]; then
         # Wait for all containers to be shutdown
-        starttime=$(date "+%s")
-        while true
-        do
-            for C in $(get_containers); do
-                lxc-info -n $C
-            done | grep -vE "RUNNING|STOPPING" >/dev/null
-            if [ $? -eq 0 ]; then
-                return 0
-            fi
-            sleep .25
+        wait
 
-            curtime=$(date "+%s")
-
-            if [ $(( $curtime - $starttime )) -gt 30 ]; then
-                log_warning_msg "Containers have been stopping for longer than 30 seconds"
-                # TODO force their shutdown. And maybe 30 seconds isn't long enough
-                return 0
-            fi
-        done
+        # Check all containers are halted
+        for C in $(get_containers); do
+            lxc-info -n $C
+        done | grep -vE "RUNNING|STOPPING" >/dev/null
+        if [ $? -eq 0 ]; then
+            return 0
+        else
+            return 2
+        fi
     fi
 }
 
