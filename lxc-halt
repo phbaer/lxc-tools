@@ -10,7 +10,7 @@
 #
 
 # Default command for halting the container
-SHUTDOWN_CMD="lxc-shutdown [container]"
+SHUTDOWN_CMD="lxc-shutdown -n [container]"
 
 # Default timeout for container shutdown
 TIMEOUT=20
