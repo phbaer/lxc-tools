@@ -37,12 +37,12 @@ do
 done
 
 if [ -z "$CONTAINER" ]; then
-    echo "lxc-halt: missing container name, use -n option"
+    echo "lxc-halt-container: missing container name, use -n option"
     exit 1
 fi
 
 if [ ! -d /var/lib/lxc/$CONTAINER ]; then
-    echo "lxc-halt: container $CONTAINER does not exist"
+    echo "lxc-halt-container: container $CONTAINER does not exist"
     exit 1
 fi
 

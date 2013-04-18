@@ -311,10 +311,10 @@ destroy() {
         exit
     fi
 
-    halt=$(which lxc-halt)
+    halt=$(which lxc-halt-container)
     if lxc-info -n $NAME | grep RUNNING > /dev/null; then
         if [ -n "$halt" ]; then
-            lxc-halt -n $NAME
+            lxc-halt-container -n $NAME
         else
             lxc-stop -n $NAME
         fi

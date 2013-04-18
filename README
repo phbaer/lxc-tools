@@ -72,8 +72,8 @@ echo 1 > /var/lib/lxc/$CONTAINER/autostart
 
 All containers will be stopped on shutdown, regardless of the autostart file.
 
-Note that this script will endeavour to use lxc-halt if it's in /usr/bin, see
-the docs for lxc-halt below for more information.
+Note that this script will endeavour to use lxc-halt-container if it's in /usr/bin, see
+the docs for lxc-halt-container below for more information.
 
 lxc-status
 ----------
@@ -85,12 +85,12 @@ nigel@bubbles:~$ sudo bin/lxc-status
 'debian-lenny' is STOPPED
 'ponies' is RUNNING
 
-lxc-halt
---------
+lxc-halt-container
+------------------
 
 Will stop a linux container SAFELY. ``lxc-stop`` brutally murders the container
 and all processes in it, which isn't good especially if you have daemons inside
-them. lxc-halt will run 'halt' in the container, then lxc-stop once all the
+them. lxc-halt-container will run 'halt' in the container, then lxc-stop once all the
 processes are gone (or after a configurable timeout if it's taking too long).
 
 There's one trick - there's no easy way to run the halt command in the
@@ -103,7 +103,7 @@ change the command to halt a container.  The default is ``ssh [container]
 halt``, which of course will only work if your container is resolvable at that
 hostname.
 
-If you install lxc-halt in /usr/bin, then the init.d script will use it when
+If you install lxc-halt-container in /usr/bin, then the init.d script will use it when
 you issue /etc/init.d/lxc stop. It will try stopping all the containers in
 parallel, but if you have a few containers it might take a while for all of
 them to stop.

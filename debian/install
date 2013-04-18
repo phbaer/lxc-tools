@@ -1,6 +1,6 @@
 lxc-debian /usr/bin
 lxc-ubuntu /usr/bin
-lxc-halt /usr/bin
+lxc-halt-container /usr/bin
 lxc-status /usr/bin
 
 lxc-watchdog.sh /usr/sbin

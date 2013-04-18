@@ -62,7 +62,7 @@ do_start()
 
 do_stop()
 {
-    halt=$(which lxc-halt)
+    halt=$(which lxc-halt-container)
     for C in $(get_containers | /usr/bin/tac); do
         log_progress_msg "$C"
         if lxc-info -n $C | grep RUNNING > /dev/null 2>&1; then

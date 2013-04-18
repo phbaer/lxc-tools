@@ -24,7 +24,7 @@ Description: Linux containers userspace tools
    lxc, for building debian based containers
  * lxc-ubuntu - a (slightly) modified version of the new lxc-debian for Ubuntu
    Lucid
- * lxc-halt - a script for safely shutting down a container (which the init
+ * lxc-halt-container - a script for safely shutting down a container (which the init
    script will use)
  * lxc-status - dumps running/not running state of all containers
  * lxc-provider - a suite of scripts and configuration files helps you make
